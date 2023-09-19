@@ -21,6 +21,42 @@ properties:
 
 messages:
 
+   UtilGoRandomNear(what = $, where = $, new_row = $, new_col = $,
+                    fine_row = FINENESS/2, fine_col = FINENESS/2,
+                    iMinDist = 64, iMaxDist = 192)
+   "Different from UtilGoNearSquare since min/max distance can be specified."
+   "Assumes 'what' is allowed to go to 'where'."
+   {
+      local iMRow, iMCol, iMRowFine, iMColFine;
+
+      if what = $ OR where = $ OR new_row = $ OR new_col = $
+      {
+         Debug("Got $ what,where,new_row,or new_col",
+               what,where,new_row,new_col);
+
+         return FALSE;
+      }
+
+      if NOT IsClass(where,&Room)
+      {
+         Debug("Got non-room destination",where);
+
+         return FALSE;
+      }
+
+      if (GetRandomMoveDestBSP(Send(where,@GetRoomData), 24, iMinDist,
+               iMaxDist, new_row, new_col, fine_row, fine_col,
+               *iMRow, *iMCol, *iMRowFine, *iMColFine))
+      {
+         Send(where,@NewHold,#what=what,#new_row=iMRow,#new_col=iMCol,
+               #fine_row=iMRowFine,#fine_col=iMColFine);
+
+         return TRUE;
+      }
+
+      return FALSE;
+   }
+
    UtilGoNearSquare(what = $,where = $,new_row = $,new_col = $,do_move = TRUE,
                     max_distance = 50000,new_angle = $, mob_override = FALSE,
                     fine_row = FINENESS/2,fine_col = FINENESS/2)
@@ -50,17 +86,14 @@ messages:
       room_rows = Send(where,@GetRoomRows);
       room_cols = Send(where,@GetRoomCols);
 
-      distance = 0;
-      while distance <= max_distance
+      for (distance = 0; distance <= max_distance; ++distance)
       {
-         i = 0;
-         while i <= (2*distance)
+         for (i = 0; i <= 2 * distance; ++i)
          {
             if i = 0 OR i = (2*distance)
             {
                // First or last row, check all the way across
-               j = 0;
-               while j <= (2*distance)
+               for (j = 0; j <= (2*distance); ++j)
                {
                   row = new_row - distance + i;
                   col = new_col - distance + j;
@@ -73,8 +106,6 @@ messages:
                   {
                      return TRUE;
                   }
-
-                  j = j + 1;
                }
             }
             else
@@ -103,11 +134,7 @@ messages:
                   }
                }
             }
-
-            i = i + 1;
          }
-
-         distance = distance + 1;
       }
 
       return FALSE;
@@ -137,6 +164,11 @@ messages:
                if new_angle <> $
                {
                   Send(where,@SomethingTurned,#what=what,#new_angle=new_angle);
+               }
+
+               if IsClass(what,&User)
+               {
+                  Send(what,@SetLastServerTeleport);
                }
             }
 
@@ -388,8 +420,8 @@ messages:
          return Xlat;
       }
 
-      Xlat = Xlat - XLAT_BASE_VALUE;
-      Xlat = Xlat / 11;
+      Xlat -= XLAT_BASE_VALUE;
+      Xlat /= 11;
 
       return Xlat;
    }
@@ -398,8 +430,8 @@ messages:
    {
       if Xlat > 120 AND Xlat < 131
       {
-         Xlat = Xlat - 121;
-         Xlat = Xlat % 3;
+         Xlat -= 121;
+         Xlat %= 3;
          if Xlat = 0
          {
             return XLAT_TO_SKIN4;
@@ -418,10 +450,22 @@ messages:
          return Xlat;
       }
 
-      Xlat = Xlat - XLAT_BASE_VALUE;
-      Xlat = Xlat % 11;
+      Xlat -= XLAT_BASE_VALUE;
+      Xlat %= 11;
 
       return Xlat;
+   }
+
+   GetRandomGreyTranslation()
+   {
+      local iRandom;
+
+      do
+      {
+         iRandom = Random(PT_GRAY_TO_ORANGE,PT_GRAY_TO_PLATBLOND);
+      }while (iRandom = 31); // 31 is an unset/invalid XLAT.
+
+      return iRandom;
    }
 
    ListClass(lSource = $)
@@ -432,7 +476,7 @@ messages:
       foreach i in lSource
       {
          Debug("create object", GetClass(i));
-         if (IsClass(i,&NumberItem))
+         if (Send(i,@IsStackable))
          {
             //Debug(GetClass(i),Send(i,@GetNumber));
             Debug("create object",GetClass(i),"number int",
@@ -476,10 +520,9 @@ messages:
 
    GetSpellCommands(plSpells = $)
    {
-      local i, lSpells;
+      local i;
 
-      lSpells = ListCopy(plSpells);
-      foreach i in lSpells
+      foreach i in plSpells
       {
          //AdminSetSpell(num = 0, ability = 0, add = 0)
          Debug("send o % AdminSetSpell num int",
@@ -495,7 +538,6 @@ messages:
       local i, lUsers, lFinal, iHigh, iIndex;
 
       lUsers = ListCopy(Send(SYS,@GetUsers));
-      lFinal = $;
 
       // First, let's delete any deadweight from the list.
       // People who never logged on get nothing.
@@ -537,20 +579,6 @@ messages:
       }
 
       return lFinal;
-   }
-
-   IntToString(num=0)
-   {
-      ClearTempString();
-      AppendTempString(num);
-
-      return SetString($,GetTempString());
-   }
-
-   CreateSpellBook(SID=SID_FIREBALL,mana=1)
-   "Creates a monster spellbook with a single spell."
-   {
-      return [[SID,mana,100]];
    }
 
    TryLook()

@@ -34,7 +34,7 @@ classvars:
    viIndefinite = ARTICLE_NONE
    viDefinite = ARTICLE_NONE
 
-   viSchool = SKS_FENCING
+   viSchool = SKS_WEAPONCRAFT
    viSkill_Num = SKID_SLASH
    viSkill_level = 1
    viChance_to_increase = 20
@@ -57,10 +57,10 @@ messages:
       
       i= send(weapon_used,@GetAttackType);
       
-      if (i & ATCK_WEAP_THRUST) AND NOT (i & ATCK_WEAP_SLASH)
+      if (i & ATK_TYPE_THRUST) AND NOT (i & ATK_TYPE_SLASH)
       {
-         i = i & (~ATCK_WEAP_THRUST);
-         i = (i | ATCK_WEAP_SLASH);
+         i = i & (~ATK_TYPE_THRUST);
+         i = (i | ATK_TYPE_SLASH);
       }
       
       return i;

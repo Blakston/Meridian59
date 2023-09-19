@@ -42,8 +42,8 @@ classvars:
    viDefinite = ARTICLE_NONE
 
    viSkill_num = SKID_KICK
-   viSchool = SKS_BRAWLING
-   viSkill_level = 50
+   viSchool = SKS_DM
+   viSkill_level = 6
 
    viskillExertion = 2000
    viHit_Factor = 30
@@ -55,7 +55,7 @@ classvars:
                         //  skill happen automatically, and are not accessible
                         //  via menu.
 
-   viAttack_Type = ATCK_WEAP_UNARMED+ATCK_WEAP_KICK
+   viAttack_Type = ATK_TYPE_UNARMED+ATK_TYPE_KICK
 
 properties:
 

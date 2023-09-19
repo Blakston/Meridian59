@@ -34,9 +34,9 @@ classvars:
    viTreasure_type = TID_EMPTY
 
    viSpeed = SPEED_FASTER
-   viAttack_type = ATCK_WEAP_SLASH
+   viAttack_type = ATK_TYPE_SLASH
    viAttributes = 0
-   viDefault_behavior = AI_FIGHT_NEWBIESAFE | AI_MOVE_REGROUP
+   viDefault_behavior = AI_FIGHT_NEWBIESAFE
 
    viColorTranslate1 = XLAT_TO_RED     // Shirt
    viColorTranslate2 = XLAT_TO_BLACK   // Pants
@@ -52,6 +52,12 @@ classvars:
    viCashMin = 200
    viCashMax = 600
 
+   viWimpy = 20
+
+   vbCanRally = TRUE
+
+   viSocial = 70
+
 properties:
 
    piBaseLevel = 80
@@ -63,10 +69,17 @@ properties:
    vrDead_Legs = human_dead_male_iconb_rsc
    viLevel = 80         // piBaseLevel
    viDifficulty = 4     // piBaseDifficulty
-   piGender = GENDER_MALE
    viKarma = 0
 
 messages:
+
+   Constructed()
+   {
+      // Excluses troops from monster count.
+      pbEvent = TRUE;
+
+      propagate;
+   }
 
    SetClothes()
    {
@@ -224,34 +237,36 @@ messages:
       propagate;
    }
 
-   IsAlly(target = $, regroup = FALSE)
+   IsAlliedClass(what=$)
    {
       local iFaction;
 
-      if IsClass(target,GetClass(self))
+      if IsClass(what,&Battler)
       {
-         return TRUE;
-      }
+         iFaction = Send(what,@GetFaction);
 
-      if IsClass(target,&Player)
-      {
-         iFaction = Send(target,@GetFaction);
-         if (NOT regroup) AND (iFaction = FACTION_NEUTRAL)
+         // Players or mobs could be same faction.
+         if (iFaction = viFaction)
          {
             return TRUE;
          }
 
-         if iFaction = viFaction
+         // We also defend lowbies that are unfactioned.
+         if IsClass(what,&User)
+            AND (Send(what,@GetBaseMaxHealth) < Send(SETTINGS_OBJECT,@GetPKillEnableHP))
          {
-            return TRUE;
-         }
-         else
-         {
+            // Players not of same faction.
+            if (iFaction = FACTION_NEUTRAL)
+            {
+               return TRUE;
+            }
+
+            // Other players aren't allies.
             return FALSE;
          }
       }
 
-      propagate;
+      return FALSE;
    }
 
    SpecialHatredBehavior(what=$)
@@ -266,17 +281,44 @@ messages:
          iFaction = Send(what,@GetFaction);
          if iFaction = viFaction
          {
-            return -30;
+            return -300;
          }
 
          if (iFaction <> FACTION_NEUTRAL)
             AND (iFaction <> viFaction)
          {
-            return 30;
+            return 300;
          }
       }
 
       return 0;
+   }
+
+   // Troops don't follow their leader to the next zone.
+   SomethingLeft(what = $, iRow=0, iCol=0)
+   {
+
+     // Our leader may have left. Good riddance.
+      if poLeader <> $ AND what = poLeader
+      {
+         // SetLeader sets leader to nil if none is passed.
+         Send(self,@SetLeader);
+      }
+
+      propagate;
+   }
+
+   // Let mages/troops of the same faction count as equal in quests.
+   IsMonsterQuestEquivalent(what=$)
+   {
+      if (what <> $
+         AND IsClass(what,&FactionTroop)
+         AND Send(what,@GetFaction) = viFaction)
+      {
+         return TRUE;
+      }
+
+      return FALSE;
    }
 
 end

@@ -34,9 +34,9 @@ classvars:
    vrDead_name = RebelTroop_dead_name_rsc
 
    viSpeed = SPEED_AVERAGE
-   viAttack_type = ATCK_WEAP_SLASH
+   viAttack_type = ATK_TYPE_SLASH
    viAttributes = 0
-   viDefault_behavior = AI_FIGHT_NEWBIESAFE | AI_MOVE_REGROUP
+   viDefault_behavior = AI_FIGHT_NEWBIESAFE
    viChanceFemale = 50  // percentage chance to be female
 
    viColorTranslate1 = XLAT_TO_RED     // Shirt

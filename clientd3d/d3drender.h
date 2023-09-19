@@ -33,8 +33,9 @@ inline DWORD F2DW( FLOAT f ) { return *((DWORD*)&f); }
 #define ZBIAS_WORLD				2
 #define ZBIAS_MASK				1
 
-#define D3DRENDER_REDRAW_UPDATE	0x00000001
-#define D3DRENDER_REDRAW_ALL	0x00000002
+#define D3DRENDER_REDRAW_UPDATE        0x00000001
+#define D3DRENDER_REDRAW_ALL           0x00000002
+#define D3DRENDER_REDRAW_STATIC_LIGHTS 0x00000004
 
 #define D3DRENDER_SET_ALPHATEST_STATE(_pDevice, _enable, _refValue, _compareFunc)	\
 	IDirect3DDevice9_SetRenderState(gpD3DDevice, D3DRS_ALPHATESTENABLE, _enable);	\
@@ -116,15 +117,9 @@ HRESULT				D3DRenderInit(HWND hWnd);
 void				D3DRenderReset(void);
 void				D3DRenderShutDown(void);
 void				D3DRenderBegin(room_type *room, Draw3DParams *params);
-void				D3DGeometryBuild(room_type *room);
-void				D3DGeometryUpdate(room_type *room);
 void				D3DRenderResizeDisplay(int left, int top, int right, int bottom);
 void				D3DRenderEnableToggle(void);
 int					D3DRenderIsEnabled(void);
-LPDIRECT3DTEXTURE9	D3DRenderTextureCreateFromBGF(PDIB pDib, BYTE xLat0, BYTE xLat1,
-												  BYTE effect);
-void				D3DRenderPaletteSet(UINT xlatID0, UINT xlatID1, BYTE flags);
-void				D3DRenderBackgroundSet(ID background);
 void				D3DRenderBackgroundSet2(ID background);
 d3d_render_packet_new *D3DRenderPacketFindMatch(d3d_render_pool_new *pPool, LPDIRECT3DTEXTURE9 pTexture,
 												PDIB pDib, BYTE xLat0, BYTE xLat1, BYTE effect);
@@ -134,47 +129,13 @@ void				D3DRenderPoolReset(d3d_render_pool_new *pPool, void *pMaterialFunc);
 void				*D3DRenderMalloc(unsigned int bytes);
 void				D3DRenderFontInit(font_3d *pFont, HFONT hFont);
 
-// material functions
-Bool D3DMaterialNone(d3d_render_chunk_new *pPool);
-
-// world
-Bool D3DMaterialWorldPool(d3d_render_pool_new *pPool);
-Bool D3DMaterialWorldPacket(d3d_render_packet_new *pPacket, d3d_render_cache_system *pCacheSystem);
-Bool D3DMaterialWorldDynamicChunk(d3d_render_chunk_new *pChunk);
-Bool D3DMaterialWorldStaticChunk(d3d_render_chunk_new *pChunk);
-Bool D3DMaterialWallMaskPool(d3d_render_pool_new *pPool);
-Bool D3DMaterialMaskChunk(d3d_render_chunk_new *pChunk);
-
-// lmaps
-Bool D3DMaterialLMapDynamicPool(d3d_render_pool_new *pPool);
-Bool D3DMaterialLMapDynamicPacket(d3d_render_packet_new *pPacket, d3d_render_cache_system *pCacheSystem);
-Bool D3DMaterialLMapDynamicChunk(d3d_render_chunk_new *pChunk);
-Bool D3DMaterialLMapStaticChunk(d3d_render_chunk_new *pChunk);
-
-// objects
-Bool D3DMaterialObjectPool(d3d_render_pool_new *pPool);
-Bool D3DMaterialObjectPacket(d3d_render_packet_new *pPacket, d3d_render_cache_system *pCacheSystem);
-Bool D3DMaterialObjectChunk(d3d_render_chunk_new *pChunk);
-
-// invisible objects
-Bool D3DMaterialObjectInvisiblePool(d3d_render_pool_new *pPool);
-Bool D3DMaterialObjectInvisiblePacket(d3d_render_packet_new *pPacket, d3d_render_cache_system *pCacheSystem);
-Bool D3DMaterialObjectInvisibleChunk(d3d_render_chunk_new *pChunk);
-
-// effects
-Bool D3DMaterialEffectPool(d3d_render_pool_new *pPool);
-Bool D3DMaterialEffectPacket(d3d_render_packet_new *pPacket, d3d_render_cache_system *pCacheSystem);
-Bool D3DMaterialEffectChunk(d3d_render_chunk_new *pChunk);
-
-// blur
-Bool D3DMaterialBlurPool(d3d_render_pool_new *pPool);
-Bool D3DMaterialBlurPacket(d3d_render_packet_new *pPacket, d3d_render_cache_system *pCacheSystem);
-Bool D3DMaterialBlurChunk(d3d_render_chunk_new *pChunk);
-
-// particles
-Bool D3DMaterialParticlePool(d3d_render_pool_new *pPool);
-Bool D3DMaterialParticlePacket(d3d_render_packet_new *pPacket, d3d_render_cache_system *pCacheSystem);
-Bool D3DMaterialParticleChunk(d3d_render_chunk_new *pChunk);
+// Updating data for each frame.
+void D3DRenderFloorUpdate(BSPnode *pNode, PDIB pDib, custom_xyz *pXYZ, custom_st *pST,
+   custom_bgra *pBGRA);
+void D3DRenderCeilingUpdate(BSPnode *pNode, PDIB pDib, custom_xyz *pXYZ, custom_st *pST,
+   custom_bgra *pBGRA);
+void D3DRenderWallUpdate(WallData *pWall, PDIB pDib, unsigned int *flags, custom_xyz *pXYZ,
+   custom_st *pST, custom_bgra *pBGRA, unsigned int type, int side);
 
 // Use this function to determine if the bounding box is out of the player's
 //view. Useful for not adding stuff to draw that the player can't see.
@@ -182,7 +143,7 @@ Bool IsHidden(Draw3DParams *params, long x0, long y0, long x1, long y1);
 
 inline static int DistanceGet(int x, int y)
 {
-   return (int)sqrt((double)(x * x) + (double)(y * y));;
+   return (int)sqrtf((x * x) + (y * y));
 }
 
 #endif	// __D3DRENDER_H__

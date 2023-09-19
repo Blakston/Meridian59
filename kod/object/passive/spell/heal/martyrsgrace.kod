@@ -24,28 +24,24 @@ resources:
       "In a display of limitless compassion and empathy, the caster shares in "
       "the visible suffering of his allies, compelling Shal'ille to come to "
       "their aid and heal their injuries.  The experience of martyrdom may free "
-      "and rejuvenate the caster's mind.  Requires polished seraphym to cast."
-
+      "and rejuvenate the caster's mind."
    martyrsgrace_cast_rsc = \
       "%s%s shares your pain, restoring ~g~B%i~B~n hitpoints."
-
    martyrsgrace_sacrifice_rsc = \
       "You share in your allies' pain, sacrificing ~r~B%i~B~n hitpoints."
-
    martyrsgrace_mana_rsc = \
       "Your martyrdom leaves you with a sense of heightened clarity, restoring "
       "~b~B%i~B~n points of mana."
-
    martyrsgrace_notargetshurt_rsc = \
-      "All of your allies seem to be perfectly healthy. You might want to reconsider "
-      "your matyrdom."
-
+      "All of your allies seem to be perfectly healthy. You might want to "
+      "reconsider your martyrdom."
    martyrsgrace_notargetsworthy_rsc = \
-      "You are quite sure that none of the despicable creatures around you are worthy "
-      "of your matyrdom."
-
+      "You are quite sure that none of the despicable creatures around you "
+      "are worthy of your martyrdom."
    martyrsgrace_notargetsaround_rsc = \
-      "Your matyrdom would be quite pointless with no one around to see it."
+      "Your martyrdom would be quite pointless with no one around to see it."
+   martyrsgrace_nohealth_rsc = \
+      "You don't have enough remaining health to sacrifice!"
 
 classvars:
 
@@ -65,6 +61,8 @@ classvars:
 
 properties:
 
+   piPctHealthLeft = 10
+
 messages:
 
    ResetReagents()
@@ -79,6 +77,13 @@ messages:
    {
       local oRoom, i, each_obj, lPlayers;
 
+      if (Send(who,@GetHealth) < Send(who,@GetMaxHealth) * piPctHealthLeft / 100)
+      {
+         Send(who,@MsgSendUser,#message_rsc=martyrsgrace_nohealth_rsc);
+
+         return FALSE;
+      }
+
       oRoom = Send(who,@GetOwner);
 
       // In order to give players detailed feedback about why they can't
@@ -86,31 +91,16 @@ messages:
       // First, compile a list of all players in sight sans 'who'.
       foreach i in Send(oRoom,@GetHolderActive)
       {
-         each_obj = Send(oRoom,@HolderExtractObject,#data=i);
+         each_obj = First(i);
 
-         if each_obj = who
-         {
-            continue;
-         }
-
-         if NOT IsClass(each_obj,&Player)
-         {
-            continue;
-         }
-
-         if Send(each_obj,@IsInCannotInteractMode)
-         {
-            continue;
-         }
-
-         if (IsClass(oRoom,&GuildHall)
+         if (each_obj = who
+            OR NOT IsClass(each_obj,&Player)
+            OR Send(each_obj,@IsInCannotInteractMode)
+            OR (IsClass(oRoom,&GuildHall)
                AND Send(oRoom,@InFoyer,#who=each_obj)
                   <> Send(oRoom,@InFoyer,#who=who))
-         {
-            continue;
-         }
-
-         if NOT Send(oRoom,@LineOfSight,#obj1=who,#obj2=each_obj)
+            OR NOT Send(oRoom,@LineOfSight,#obj1=who,#obj2=each_obj)
+            OR (IsClass(each_obj,&DM) AND Send(each_obj,@IsDMStealthed)))
          {
             continue;
          }
@@ -122,19 +112,21 @@ messages:
       if lPlayers = $
       {
          Send(who,@MsgSendUser,#message_rsc=martyrsgrace_notargetsaround_rsc);
+
          return FALSE;
       }
 
-      // Someone must be around, but since they aren't on our original list, they
-      // must be undeserving of our attention. Tell the player.
-      if lTargets = $ 
+      // Someone must be around, but since they aren't on our original list,
+      // they must be undeserving of our attention. Tell the player.
+      if lTargets = $
       {
          Send(who,@MsgSendUser,#message_rsc=martyrsgrace_notargetsworthy_rsc);
+
          return FALSE;
       }
 
-      // Our list isn't empty, so there are some nice people around. Let's create
-      // a list of those of them that need our help.
+      // Our list isn't empty, so there are some nice people around. Let's
+      // create a list of those of them that need our help.
       lPlayers = $;
       foreach each_obj in lTargets
       {
@@ -177,7 +169,7 @@ messages:
    GetTargets(who=$,lTargets=$)
    "Picks allied players within line of sight only."
    {
-      local oRoom, i, each_obj, lFinalTargets;
+      local oRoom, i, each_obj, lFinalTargets, bCanCasterPvP;
 
       if who = $
       {
@@ -186,39 +178,40 @@ messages:
 
       oRoom = Send(who,@GetOwner);
 
+      // If the caster can't PvP in this room, they can't heal anyone who has
+      // engaged in PvP recently. Can still heal uninvolved players, to allow
+      // healing in events that happen to be in towns. bCanCasterPvP being
+      // true means the caster should be attackable by at least some subset
+      // of other players (shielded, guilded or reds).
+      bCanCasterPvP = Send(who,@CanPlayerPvP)
+         AND Send(oRoom,@AllowGuildAttack,#what=who,#report=FALSE);
+
       foreach i in Send(oRoom,@GetHolderActive)
       {
-         each_obj = Send(oRoom,@HolderExtractObject,#data=i);
+         each_obj = First(i);
 
          if each_obj = who
-         {
-            continue;
-         }
-
-         if NOT IsClass(each_obj,&Player)
-         {
-            continue;
-         }
-
-         if Send(each_obj,@IsInCannotInteractMode)
-         {
-            continue;
-         }
-
-         if (IsClass(oRoom,&GuildHall)
+            OR NOT (IsClass(each_obj,&Player)
+               OR (IsClass(each_obj,&Follower)
+                  AND Send(each_obj,@GetLeader) = who))
+            OR Send(each_obj,@IsInCannotInteractMode)
+            OR (IsClass(oRoom,&GuildHall)
                AND Send(oRoom,@InFoyer,#who=each_obj)
                   <> Send(oRoom,@InFoyer,#who=who))
-         {
-            continue;
-         }
-
-         if NOT Send(oRoom,@LineOfSight,#obj1=who,#obj2=each_obj)
+            OR NOT Send(oRoom,@LineOfSight,#obj1=who,#obj2=each_obj)
+            OR (IsClass(each_obj,&DM) AND Send(each_obj,@IsDMStealthed))
          {
             continue;
          }
 
          if Send(each_obj,@CheckPlayerFlag,#flag=PFLAG_MURDERER)
             OR Send(each_obj,@CheckPlayerFlag,#flag=PFLAG_OUTLAW)
+         {
+            continue;
+         }
+
+         if (NOT bCanCasterPvP
+            AND NOT Send(each_obj,@CanHelpPlayerStrict))
          {
             continue;
          }
@@ -235,26 +228,27 @@ messages:
       return lFinalTargets;
    }
 
-   CastSpell(who = $, lTargets = $, iSpellPower = 0)
+   DoSpellEffects(who = $, lTargets = $, iSpellPower = 0)
    {
       local lFinalTargets, each_obj, iMissingHealth, iHealth, iBonus, iPool,
-         iMissing, iPercentage, iHeal, iSacrifice, iRestore;
+            iMissing, iPercentage, iHeal, iSacrifice, iRestore, iMinLeft;
 
       iMissingHealth = 0;
 
       // Let's see how much health is lost between all of our targets.
       foreach each_obj in lTargets
       {
-         iMissingHealth = iMissingHealth + bound(Send(each_obj,@GetMaxHealth)
-         - Send(each_obj,@GetHealth),0,MAX_HP);
+         iMissingHealth += Bound(Send(each_obj,@GetMaxHealth)
+                           - Send(each_obj,@GetHealth),0,MAX_HEALTH);
       }
 
       // Now figure out the caster's health pool, which is a compound of their 
       // current health, their spellpower and their karma.
-      // We only utilize 90% of the actual health pool.
-      iHealth = Send(who,@GetHealth)-(Send(who,@GetMaxHealth)/10);
-      iBonus = bound((Send(who,@GetKarma)-60)*5/2,0,100) + iSpellPower;
-      iPool = iHealth*iBonus/100;
+      // We only utilize (by default) 90% of the actual health pool.
+      iMinLeft = Send(who,@GetMaxHealth) * piPctHealthLeft / 100;
+      iHealth = Send(who,@GetHealth) - iMinLeft;
+      iBonus = Bound((Send(who,@GetKarma)-60)*5/2,0,100) + iSpellPower;
+      iPool = iHealth * iBonus / 100;
 
       // Figure out, what percentage of the lost health we can restore.
       iPercentage = 100*iPool/iMissingHealth;
@@ -264,11 +258,12 @@ messages:
       {
          foreach each_obj in lTargets
          {
-            iMissing = bound(Send(each_obj,@GetMaxHealth) - Send(each_obj,@GetHealth),0,MAX_HP);
+            iMissing = Bound(Send(each_obj,@GetMaxHealth)
+                        - Send(each_obj,@GetHealth),0,MAX_HEALTH);
             iHeal = iMissing;
             if iHeal > 0
             {
-               Send(each_obj,@GainHealthNormal,#amount=iHeal);
+               Send(each_obj,@GainHealth,#amount=iHeal);
                Send(who,@MsgSendUser,#message_rsc=vrSuccess,
                      #parm1=Send(each_obj,@GetDef),#parm2=Send(each_obj,@GetName),
                      #parm3=iHeal);
@@ -279,12 +274,12 @@ messages:
             }
          }
          // Pay the price!
-         iSacrifice = iHealth*iMissingHealth/iPool;
+         iSacrifice = iHealth * iMissingHealth / iPool;
          if iSacrifice > 0
          {
             Send(who,@LoseHealth,#amount=iSacrifice);
             Send(who,@MsgSendUser,#message_rsc=martyrsgrace_sacrifice_rsc,
-               #parm1=iSacrifice);
+                  #parm1=iSacrifice);
             Send(Send(who,@GetOwner),@SomethingWaveRoom,#what=who,
                   #wave_rsc=Send(who,@GetOuchSound));
          }
@@ -295,11 +290,12 @@ messages:
       {
          foreach each_obj in lTargets
          {
-            iMissing = bound(Send(each_obj,@GetMaxHealth)-Send(each_obj,@GetHealth),0,MAX_HP);
-            iHeal = iMissing*iPercentage/100;
+            iMissing = Bound(Send(each_obj,@GetMaxHealth)
+                        - Send(each_obj,@GetHealth),0,MAX_HEALTH);
+            iHeal = iMissing * iPercentage / 100;
             if iHeal > 0
             {
-               Send(each_obj,@GainHealthNormal,#amount=iHeal);
+               Send(each_obj,@GainHealth,#amount=iHeal);
                Send(who,@MsgSendUser,#message_rsc=vrSuccess,
                      #parm1=Send(each_obj,@GetDef),#parm2=Send(each_obj,@GetName),
                      #parm3=iHeal);
@@ -315,23 +311,22 @@ messages:
          {
             Send(who,@LoseHealth,#amount=iSacrifice);
             Send(who,@MsgSendUser,#message_rsc=martyrsgrace_sacrifice_rsc,
-               #parm1=iSacrifice);
+                  #parm1=iSacrifice);
             Send(Send(who,@GetOwner),@SomethingWaveRoom,#what=who,
                   #wave_rsc=Send(who,@GetOuchSound));
          }
       }
 
       // Restore mana based on health sacrificed.
-      iRestore = iSacrifice*iBonus/800;
+      iRestore = iSacrifice * iBonus / 800;
       if iRestore > 0
       {
          Send(who,@GainMana,#amount=iRestore);
          Send(who,@MsgSendUser,#message_rsc=martyrsgrace_mana_rsc,
-            #parm1=iRestore);
+               #parm1=iRestore);
       }
 
-
-      propagate;
+      return TRUE;
    }
 
 end

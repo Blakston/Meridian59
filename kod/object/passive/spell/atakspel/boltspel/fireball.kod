@@ -20,12 +20,8 @@ resources:
    fireball_name_rsc = "fireball"
    fireball_icon_rsc = fireball.bgf
    fireball_look_icon = ifirebal.bgf
-   fireball_desc_rsc = \
-      "Sends a ball of flames at the target.  "
-      "Requires red mushrooms and orc teeth to cast."
-
+   fireball_desc_rsc = "Sends a ball of flames at the target."
    fireball_hit_rsc = "A ball of fire strikes %s%s!"
-
    fireball_sound = ffirebal.ogg
 
 classvars:
@@ -37,7 +33,7 @@ classvars:
 
    viSpell_num = SID_FIREBALL
 
-   viAttack_spell = ATCK_SPELL_ALL+ATCK_SPELL_FIRE
+   viSpell_type = SPL_TYPE_ALL+SPL_TYPE_FIRE
 
    viMana = 7
    viSchool = SS_FAREN

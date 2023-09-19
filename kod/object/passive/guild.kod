@@ -15,13 +15,15 @@ constants:
    include blakston.khd
    include protocol.khd
 
-   // Once you leave a guild, you cannot rejoin another one for 4 hours
-   // You cannot rejoin the same one for 18 times this length.
-   // This is measured in minutes.
-   CANNOT_REJOIN_TIME = 4 * 60  
+   // Once you leave a guild, you cannot rejoin another one for 2 hours
+   CANNOT_REJOIN_TIME = 2 * 60
+
+   // This number is decremented each time the maintenance function is
+   // called, i.e. every 6 minutes. 40 decrements == 4 hours
+   CANNOT_REJOIN_SAME_TIME = 40
 
    // maximum number of people allowed in a guild.
-   MAX_MEMBERS = 400         
+   MAX_MEMBERS = 400
 
    // How much money do you lose if you pull out of a mutually-declared war?
    WAR_LOSS_PENALTY = 50000
@@ -31,7 +33,7 @@ constants:
    MATURITY_SECRET = 60
    MATURITY_NONSECRET = 30
 
-   THREE_PERSON_LIMIT = 240    
+   THREE_PERSON_LIMIT = 240
 
    MINIMUM_MEMBERS = 3
 
@@ -198,6 +200,11 @@ resources:
    guild_rent_due = \
       "~BYour guild owes %i in rent.  If this number is not reduced to 0 "
       "in the next %i %s, your guild will be disbanded."
+   guild_rent_due_mail ="Subject: Guild rent due\n"
+      "Your guild owes %i in rent.  If this number is not reduced to 0 "
+      "in the next %i %s, your guild will be disbanded.\n\nIf you have a "
+      "guild hall, it will become available for purchase and any items left "
+      "inside may be claimed by others."
 
    guild_new_hall = "~B%s is the new home of %s%q!"
    guild_abandon_hall = "~B%s is no longer the home of %s%q!"
@@ -491,12 +498,14 @@ properties:
    piColor2 = XLAT_TO_GRAY
    piShield_shape = SHIELDSHAPE_DEFAULT
 
+   piLastGuildShieldResetTime = 0
+
    piLastGuildhallRaid = 0
 
    // Information for suing for peace from a mutual guild war.
    ptSuingForPeace = $
    poGuildSuingForPeace = $
-   
+
    // Guild message of the day, seen upon logon
    psGuildMOTDstring = $
    prSetMOTDname = $
@@ -606,12 +615,7 @@ messages:
 
    IsMature()
    {
-      if piMature = 0
-      {
-         return TRUE;
-      }
-      
-      return FALSE;
+      return piMature = 0;
    }
 
    GetLastGuildhallRaid()
@@ -623,11 +627,23 @@ messages:
    {
       if now = $
       {
-         now = getTime();
+         now = GetTime();
       }
-      
+
       piLastGuildhallRaid = now;
-      
+
+      return;
+   }
+
+   UpdateTimeValues()
+   {
+      if (piLastGuildhallRaid > 0)
+      {
+         piLastGuildhallRaid = GetTime();
+      }
+
+      piLastGuildShieldResetTime = 0;
+
       return;
    }
 
@@ -866,10 +882,21 @@ messages:
             hourhours = guild_hour_rsc;
          }
 
+         // Send a message to all logged on members, mail those not logged on.
          foreach i in plMembers
          {
-            Post(First(i),@MsgSendUser,#message_rsc=guild_rent_due,
-                 #parm1=piRentDue,#parm2=piRentCounter/10,#parm3=hourhours);
+            if (Send(First(i),@IsLoggedOn))
+            {
+               Post(First(i),@MsgSendUser,#message_rsc=guild_rent_due,
+                     #parm1=piRentDue,#parm2=piRentCounter/10,#parm3=hourhours);
+            }
+            else
+            {
+               Send(First(i),@ReceiveNestedMail,#from=guild_frular,
+                  #dest_list=[First(i)],
+                  #nest_list=[4,guild_rent_due_mail,4,piRentDue,
+                        4,piRentCounter/10,4,hourhours]);
+            }
          }
       }
 
@@ -1324,6 +1351,22 @@ messages:
       return FALSE;
    }
 
+   IsOfficer(who = $)
+   {
+      local i;
+
+      foreach i in plMembers
+      {
+         if (Nth(i,2) >= RANK_LIEUTENANT
+            AND First(i) = who)
+         {
+            return TRUE;
+         }
+      }
+
+      return FALSE;
+   }
+
    InductNewMember(who=$,inductor=$)
    {
       local i;
@@ -1406,7 +1449,7 @@ messages:
                #parm3=Send(who,@GetTrueName));
 
          // Reset friend/foe colors
-         Send(First(i),@ToCliRoomContents);
+         Send(First(i),@ToCliRoomContentsFlags);
       }
 
       return TRUE;
@@ -1427,19 +1470,19 @@ messages:
 
             Send(who,@EvaluatePKstatus);
 
-            // No joining a guild again for 4 hours.
+            // No joining a guild again for 2 hours.
             Send(who,@SetGuildRejoinTime,#delayMinutes=CANNOT_REJOIN_TIME);
 
-            // No rejoining the same guild for 72 hours.  This is the number of
-            //  six-minute periods to wait.
-            plFormerMembers = cons([who,CANNOT_REJOIN_TIME*3],plFormerMembers);
+            // No rejoining the same guild for 4 hours.
+            // This is the number of six-minute periods to wait.
+            plFormerMembers = Cons([who,CANNOT_REJOIN_SAME_TIME],plFormerMembers);
 
             plMembers = DelListElem(plMembers,i);
             bFound = TRUE;
          }
 
          // Reset friend/foe colors for everyone
-         Send(First(i),@ToCliRoomContents);
+         Send(First(i),@ToCliRoomContentsFlags);
       }
 
       if bFound = TRUE
@@ -1450,7 +1493,7 @@ messages:
          oOwner = Send(who,@GetOwner);
          if oOwner <> $
          {
-            Send(oOwner,@SomethingChanged,#what=who);
+            Send(oOwner,@SomethingChangedFlags,#what=who);
          }
 
          return TRUE;
@@ -2016,7 +2059,7 @@ messages:
       // Reset friend/foe colors
       foreach i in plMembers
       {
-         Send(First(i),@ToCliRoomContents);
+         Send(First(i),@ToCliRoomContentsFlags);
       }
 
       return;
@@ -2150,7 +2193,7 @@ messages:
               #parm4=Send(otherguild,@GetName));
 
          // Reset friend/foe colors
-         Send(First(i),@ToCliRoomContents);
+         Send(First(i),@ToCliRoomContentsFlags);
       }
       
       Send(otherguild,@DeclareAlly,#otherguild=self);
@@ -2191,7 +2234,7 @@ messages:
               #parm3=Send(self,@GetDef),#parm4=Send(self,@GetName));
 
          // Reset friend/foe colors
-         Send(First(i),@ToCliRoomContents);
+         Send(First(i),@ToCliRoomContentsFlags);
       }
       
       return;
@@ -2216,7 +2259,7 @@ messages:
                     #parm3=Send(self,@GetDef),#parm4=Send(self,@GetName));
 
                // Reset friend/foe colors
-               Send(First(j),@ToCliRoomContents);
+               Send(First(j),@ToCliRoomContentsFlags);
             }
             
             Send(otherguild,@RemoveDeclaredAlly,#otherguild=self);
@@ -2271,7 +2314,7 @@ messages:
                     #parm3=Send(self,@GetDef),#parm4=Send(self,@GetName));
 
                // Reset friend/foe colors
-               Send(First(j),@ToCliRoomContents);
+               Send(First(j),@ToCliRoomContentsFlags);
             }
 
             Post(otherguild,@RemoveDeclaredAlly,#otherguild=self);
@@ -2292,7 +2335,7 @@ messages:
                     #parm3=Send(self,@GetDef),#parm4=Send(self,@GetName));
 
                // Reset friend/foe colors
-               Send(First(j),@ToCliRoomContents);
+               Send(First(j),@ToCliRoomContentsFlags);
             }
 
             return TRUE;
@@ -2366,7 +2409,7 @@ messages:
               #parm3=Send(self,@GetDef),#parm4=Send(self,@GetName));
 
          // Reset friend/foe colors
-         Send(First(i),@ToCliRoomContents);
+         Send(First(i),@ToCliRoomContentsFlags);
       }
       
       Send(otherguild,@DeclaredEnemy,#otherguild=self);
@@ -2419,7 +2462,7 @@ messages:
               #parm3=Send(self,@GetDef),#parm4=Send(self,@GetName));
 
          // Reset friend/foe colors
-         Send(First(i),@ToCliRoomContents);
+         Send(First(i),@ToCliRoomContentsFlags);
       }
       
       return;
@@ -2580,7 +2623,7 @@ messages:
                     #parm3=Send(self,@GetDef),#parm4=Send(self,@GetName));
 
                // Reset all friend/foe colors
-               Send(First(j),@ToCliRoomContents);
+               Send(First(j),@ToCliRoomContentsFlags);
             }
             
             Send(otherguild,@RemoveDeclaredEnemy,#otherguild=self);
@@ -2621,7 +2664,7 @@ messages:
                      #parm3=Send(self,@GetDef),#parm4=Send(self,@GetName));
 
                // Reset friend/foe colors
-               Send(First(j),@ToCliRoomContents);
+               Send(First(j),@ToCliRoomContentsFlags);
             }
 
             return TRUE;
@@ -2713,7 +2756,7 @@ messages:
       // Reset friend/foe colors
       foreach i in plMembers
       {
-         Send(First(i),@ToCliRoomContents);
+         Send(First(i),@ToCliRoomContentsFlags);
       }
 
       RecordStat(STAT_GUILDDISBAND, Send(self,@GetName) );
@@ -2818,9 +2861,40 @@ messages:
       return piShield_shape;
    }
 
-   SetGuildColors(color1=$,color2=$,shape=$)
+   CanClaimGuildShield(who = $)
    {
-      if Send(self,@HasGuildColors)
+      local iDelay, iNow, iResetTime;
+
+      if (Send(SETTINGS_OBJECT,@CanClaimNewShields))
+      {
+         // Convert to seconds.
+         iDelay = Send(SETTINGS_OBJECT,@NewShieldClaimDelay) * 60;
+
+         iNow = GetTime();
+         iResetTime = iDelay + piLastGuildShieldResetTime;
+         if (iResetTime > iNow)
+         {
+            if (who <> $)
+            {
+               Send(who,@UserGuildSendShieldError,#iTime=iResetTime - iNow);
+            }
+
+            return FALSE;
+         }
+      }
+      else if (Send(self,@HasGuildColors))
+      {
+         Send(who,@UserGuildSendShieldError,#iTime=0);
+
+         return FALSE;
+      }
+
+      return TRUE;
+   }
+
+   SetGuildColors(who = $, color1=$,color2=$,shape=$)
+   {
+      if NOT Send(self,@CanClaimGuildShield,#who=who)
       {
          return FALSE;
       }
@@ -2839,6 +2913,8 @@ messages:
       piColor1 = color1;
       piColor2 = color2;
       piShield_shape = shape;
+
+      piLastGuildShieldResetTime = GetTime();
 
       return TRUE;
    }
@@ -2923,8 +2999,10 @@ messages:
    }
 
    SendUserMOTD(who=$)
+   "Admin can request to be shown the MOTD via admin window."
    {
-      if Send(self,@IsMember,#who=who)
+      if (Send(self,@IsMember,#who=who)
+            OR IsClass(who,&Admin))
          AND psGuildMOTDstring <> $
       {
          Send(who,@MsgSendUser,#message_rsc=guild_motd_message,

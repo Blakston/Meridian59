@@ -38,7 +38,8 @@
    BP_UNLOAD_MODULE         = 59
 
    BP_EFFECT                = 70
-   
+   BP_MOVEMENT_SPEED        = 71
+
    BP_MAIL                  = 80
    BP_REQ_GET_MAIL          = 81
    BP_SEND_MAIL             = 82
@@ -51,6 +52,10 @@
    BP_REQ_LOOKUP_NAMES      = 88
 
    BP_ACTION                = 90
+
+   BP_REQ_PERFORM           = 97
+   BP_REQ_TRIGGER_QUEST     = 98
+   BP_REQ_NPC_QUESTS        = 99
    BP_REQ_MOVE              = 100
    BP_REQ_TURN              = 101
    BP_REQ_GO                = 102
@@ -79,7 +84,8 @@
    BP_REQ_BUY_ITEMS         = 125
    BP_CHANGE_DESCRIPTION    = 126
    BP_REQ_INVENTORY_MOVE    = 127
-
+   BP_ROOM_CONTENTS_FLAGS   = 128
+   BP_CHANGE_FLAGS          = 129
    BP_PLAYER                = 130
    BP_STAT                  = 131
    BP_STAT_GROUP            = 132
@@ -125,7 +131,10 @@
    BP_ARTICLE               = 182
 
    BP_LOOKUP_NAMES          = 190
+   BP_LOOK_SPELL            = 191
+   BP_LOOK_SKILL            = 192
 
+   BP_NPC_QUEST_LIST        = 199
    BP_MOVE                  = 200
    BP_TURN                  = 201
    BP_SHOOT                 = 202
@@ -212,6 +221,8 @@
    UC_WITHDRAW = 36
    UC_BALANCE = 37
 
+   UC_GUILD_SHIELD_ERROR = 38
+
    UC_APPEAL = 40
    UC_REQ_RESCUE = 41
 
@@ -233,4 +244,5 @@
    NUMBER_OBJECT = 5
    // constant for sending string data of a resource
    STRING_RESOURCE = 6
-
+   // Constant for converting kod string to integer before sending
+   STRING_AS_INTEGER = 7

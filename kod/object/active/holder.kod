@@ -78,6 +78,49 @@ messages:
       return FALSE;
    }
 
+   FindHoldingAP(class = &Object, sequence = 1)
+   "Finds the 'sequence'th (default first) entry of type 'class' "
+   "in the active/passive lists. Checks passive first."
+   {
+      local i, each_obj, iFound;
+
+      iFound = sequence;
+
+      foreach i in plPassive
+      {
+         each_obj = Send(self,@HolderExtractObject,#data=i);
+         if IsClass(each_obj,class)
+         {
+            if iFound <= 1
+            {
+               return each_obj;
+            }
+            else
+            {
+               --iFound;
+            }
+         }
+      }
+
+      foreach i in plActive
+      {
+         each_obj = Send(self,@HolderExtractObject,#data=i);
+         if IsClass(each_obj,class)
+         {
+            if iFound <= 1
+            {
+               return each_obj;
+            }
+            else
+            {
+               --iFound;
+            }
+         }
+      }
+
+      return $;
+   }
+
    FindHolding(class = &Object, sequence = 1)
    "Finds the 'sequence'th (default first) entry of type 'class' "
    "in the passive list."
@@ -191,16 +234,27 @@ messages:
       return n;
    }
 
-   CountHoldingSummoned()
+   CountHoldingSummoned(bAll = FALSE)
+   "Won't include elements that don't count towards summoning limit "
+   "unless bAll is set."
    {
-      local n,i,each_obj;
+      local n,i,each_obj, mMsg;
 
       n = 0;
+
+      if (bAll)
+      {
+         mMsg = @IsSummoned;
+      }
+      else
+      {
+         mMsg = @CountsTowardsSummonLimit;
+      }
 
       foreach i in plActive
       {
          each_obj = Send(self,@HolderExtractObject,#data=i);
-         if Send(each_obj,@IsSummoned)
+         if Send(each_obj,mMsg)
          {
             ++n;
          }
@@ -209,7 +263,7 @@ messages:
       foreach i in plPassive
       {
          each_obj = Send(self,@HolderExtractObject,#data=i);
-         if Send(each_obj,@IsSummoned)
+         if Send(each_obj,mMsg)
          {
             ++n;
          }
@@ -329,7 +383,7 @@ messages:
    {
       local iBulk_can_hold, iWeight_can_hold, iUnit_bulk, iUnit_weight;
 
-      if NOT (IsClass(what,&NumberItem)
+      if NOT (Send(what,@IsStackable)
             OR IsClass(what,&SpellItem))
          OR Send(self,@GetBulkMax) = $
          OR Send(self,@GetWeightMax) = $
@@ -356,7 +410,7 @@ messages:
          return;
       }
 
-      if IsClass(what,&NumberItem)
+      if Send(what,@IsStackable)
       {
          foreach i in plPassive
          {
@@ -761,6 +815,25 @@ messages:
       return;
    }
 
+   SomethingHelped(what = $, target = $, oSpell = $, iAmount = 0)
+   {
+      local i, each_obj;
+
+      if oSpell = $
+      {
+         return;
+      }
+
+      foreach i in plActive
+      {
+         each_obj = Send(self,@HolderExtractObject,#data=i);
+         Send(each_obj,@SomethingHelped,#what=what,#target=target,
+               #oSpell=oSpell,#iAmount=iAmount);
+      }
+
+      return;
+   }
+
    SomethingKilled(what = $,victim = $)
    {
       local i, each_obj;
@@ -872,6 +945,19 @@ messages:
       {
          each_obj = Send(self,@HolderExtractObject,#data=i);
          Send(each_obj,@SomethingChanged,#what=what);
+      }
+
+      return;
+   }
+
+   SomethingChangedFlags(what = $)
+   {
+      local i, each_obj;
+
+      foreach i in plActive
+      {
+         each_obj = Send(self,@HolderExtractObject,#data=i);
+         Send(each_obj,@SomethingChangedFlags,#what=what);
       }
 
       return;

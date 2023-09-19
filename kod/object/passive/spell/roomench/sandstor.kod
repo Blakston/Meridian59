@@ -27,8 +27,7 @@ resources:
    sandstorm_desc_rsc = \
       "All the dust in the room is swept up into a swirling storm, "
       "making it harder and more strenuous to move and fight.  "
-      "Also has a small chance to knock arrows out of the air.  "
-      "Requires two orc teeth to cast."
+      "Also has a small chance to knock arrows out of the air."
    sandstorm_already_enchanted = "A sandstorm already rages here."
    sandstorm_on = \
       "From out of nowhere, swirling dust begins to needle into your skin, "
@@ -57,8 +56,8 @@ classvars:
    viNoNewbieOffense = TRUE
    viSpell_num = SID_SANDSTORM
    viSchool = SS_FAREN
-   viAttack_spell = 0
-   viAttack_type = ATCK_WEAP_SLASH
+   viSpell_type = 0
+   viAttack_type = ATK_TYPE_SLASH
    viSpell_level = 5
    viMana = 14
    viChance_To_Increase = 35
@@ -81,12 +80,20 @@ messages:
       return First(state) % 100;
    }
 
-   CastSpell(who = $, iSpellPower = 0)
+   DoSpellEffects(who = $, iSpellPower = 0)
    "Initiation point for the spell."
    {
       local oRoom, oWho, i, iPower;
 
-      oRoom = Send(who,@GetOwner);
+      if (IsClass(who,&Room))
+      {
+         oRoom = who;
+      }
+      else
+      {
+         oRoom = Send(who,@GetOwner);
+      }
+
       Send(oRoom,@SomeoneSaid,#type=SAY_MESSAGE,#string=sandstorm_on,#what=self);
 
       iPower = Bound(iSpellPower,0,99);
@@ -98,7 +105,7 @@ messages:
       Send(oRoom,@EnchantAllOccupants,#what=self,#iSpellPower=iSpellPower,
             #state=[SANDSTORM_PERIOD + iSpellPower, who]);
 
-      propagate;
+      return TRUE;
    }
 
    StartPeriodicEnchantment(who = $, where = $, state = 0)
@@ -168,7 +175,7 @@ messages:
       local i, lUsing;
 
       // 1 to 10 point vigor loss.
-      Send(oTarget,@AddExertion,#amount=((iSpellPower + 1) / 25) * 10000);
+      Send(oTarget,@LoseVigor,#precision=TRUE,#amount=((iSpellPower + 1) / 25) * 100);
       iDamage = 1 + (iSpellPower / 30);
       // Don't let people die because of sandstorm.
       iDamage = Bound(iDamage,0,Send(oTarget,@GetHealth) - 1);
@@ -234,7 +241,9 @@ messages:
       oCaster = Nth(state,2);
 
       if ((who = self AND NOT vbRoomEnchHitCaster)
-         OR NOT Send(oCaster,@AllowBattlerAttack,#victim=who,#stroke_obj=self))
+         OR (IsClass(oCaster,&Battler)
+            AND NOT Send(oCaster,@AllowBattlerAttack,#victim=who,
+                        #stroke_obj=self)))
       {
          return FALSE;
       }
@@ -250,7 +259,9 @@ messages:
       oCaster = Nth(state,2);
 
       if ((who = self AND NOT vbRoomEnchHitCaster)
-         OR NOT Send(oCaster,@AllowBattlerAttack,#victim=who,#stroke_obj=self))
+         OR (IsClass(oCaster,&Battler)
+            AND NOT Send(oCaster,@AllowBattlerAttack,#victim=who,
+                        #stroke_obj=self)))
       {
          return FALSE;
       }

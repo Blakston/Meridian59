@@ -13,6 +13,7 @@ Villify is DMSpell
 // (sic-- it's supposed to be 'vilify'.)
 
 constants:
+
    include blakston.khd
 
 resources:
@@ -26,9 +27,6 @@ resources:
    villify_msg_DM = "You vilify %s."
    villify_msg_target = "You have been vilified by %s."
    villify_failed = "%s%s is already a murderer."
-   villify_unworthy = \
-      "You have been deemed unworthy to cast so powerful a spell, and "
-      "it has been stripped from you."
 
 classvars:
 
@@ -48,22 +46,6 @@ messages:
       return 1;
    }
 
-   SuccessChance(who=$)
-   "If they are not a creator, then they do not get this spell off."
-   {
-      if Send(who,@PlayerIsImmortal,#gn=TRUE) <> 2
-         AND NOT Isclass(who,&Creator)
-      {
-         Send(who,@MsgSendUser,#message_rsc=villify_unworthy);
-         Send(who,@RemoveSpell,#num=viSpell_num);
-         Send(who,@ToCliStats,#group=3);
-
-         return FALSE;
-      }
-
-      return TRUE;
-   }
-
    CanPayCosts(who = $, lTargets = $)
    {
       if NOT IsClass(First(lTargets),&User)
@@ -78,7 +60,7 @@ messages:
       propagate;
    }
 
-   CastSpell(who = $, lTargets = $)
+   DoSpellEffects(who = $, lTargets = $)
    {
       local i;
 
@@ -96,24 +78,29 @@ messages:
          // from outlaw to murderer
          if Send(i,@CheckPlayerFlag,#flag=PFLAG_OUTLAW)
          {
-            Send(who,@MsgSendUser,#message_rsc=villify_msg_DM,#parm1=Send(i,@GetTrueName));
-            Send(i,@MsgSendUser,#message_rsc=villify_msg_target,#parm1=Send(who,@GetTrueName));
-            Send(i,@SetPlayerFlag,#flag=PFLAG_OUTLAW,#value=False);
-            Send(i,@SetPlayerFlag,#flag=PFLAG_MURDERER,#value=True);
-            Post(i,@EvaluatePKStatus);
+            Send(who,@MsgSendUser,#message_rsc=villify_msg_DM,
+                  #parm1=Send(i,@GetTrueName));
+            Send(i,@MsgSendUser,#message_rsc=villify_msg_target,
+                  #parm1=Send(who,@GetTrueName));
+            Send(i,@MakePlayerMurderer);
 
             continue;
          }
 
          // from lawful to outlaw
-         Send(who,@MsgSendUser,#message_rsc=villify_msg_DM,#parm1=Send(i,@GetTrueName));		
-         Send(i,@MsgSendUser,#message_rsc=villify_msg_target,#parm1=Send(who,@GetTrueName));
-         Send(i,@SetPlayerFlag,#flag=PFLAG_OUTLAW,#value=True);
-         Send(i,@SetPlayerFlag,#flag=PFLAG_MURDERER,#value=False);
+         Send(who,@MsgSendUser,#message_rsc=villify_msg_DM,
+               #parm1=Send(i,@GetTrueName));
+         Send(i,@MsgSendUser,#message_rsc=villify_msg_target,
+               #parm1=Send(who,@GetTrueName));
+         Send(i,@SetPlayerFlag,#flag=PFLAG_OUTLAW,#value=TRUE);
+         Send(i,@SetPlayerFlag,#flag=PFLAG_MURDERER,#value=FALSE);
+         // Reset phase/ghost time.
+         Send(who,@RefreshPhaseTimeToBase);
+
          Post(i,@EvaluatePKStatus);
       }
 
-      propagate;
+      return TRUE;
    }
 
 end

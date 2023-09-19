@@ -93,6 +93,8 @@
 #define IDS_HTTPKEY                     85
 #define IDS_HELPFILE                    86
 #define IDS_BADCOMMAND                  87
+#define IDS_CHOOSE                      88
+#define IDS_INTERACT                    89
 #define IDS_DECOMPRESSING               90
 #define IDS_APPNAME                     91
 #define IDS_INIFILE                     92
@@ -138,24 +140,29 @@
 #define IDD_ABOUT                       120
 #define IDS_UNKNOWNERROR                120
 #define IDD_MAINMENU                    121
-#define IDS_GUEST                       121
 #define IDD_DOWNLOAD                    122
-#define IDS_GUESTFULL                   122
 #define IDD_PASSWORD                    123
+#define IDD_DESCSPELL                   124
 #define IDC_TARGETCURSOR                125
 #define IDD_TIMEOUT                     126
 #define IDD_REGISTER                    127
 #define IDD_ADMINNOTE                   128
 #define IDS_NOSELLERS                   128
+#define IDD_DESCSKILL                   129
 #define IDS_NOOFFERERS                  129
 #define IDS_NOBROWSER                   130
+#define IDS_BUY                         131
+#define IDS_OFFER                       132
+#define IDS_QUEST                       133
 #define IDI_CLOCK                       134
 #define IDS_CANTFINDFILE                134
 #define IDI_FORM                        135
 #define IDS_FTPFAILED                   135
 #define IDS_MISSINGFILE                 136
 #define IDB_INTRO                       137
+#define IDS_DEPOSIT                     138
 #define IDS_DEARCHIVEERROR              139
+#define IDS_WITHDRAW                    140
 #define IDS_CANTINIT                    141
 #define IDS_NOCONNECTION                142
 #define IDS_BADCALLBACK                 143
@@ -193,7 +200,10 @@
 #define IDS_PROFANITYWARNING            163
 #define IDB_BLUEWHO                     164
 #define IDS_HOMEPAGEURL                 164
-#define IDD_GUEST                       166
+#define IDS_TIMETOOLBAR                 165
+#define IDS_TIME0                       166
+#define IDS_FPS0                        167
+#define IDS_FPSTOOLBAR                  168
 #define IDA_DOWNLOAD                    170
 #define IDB_VIEWTREAT_TOPLEFT           171
 #define IDB_VIEWTREAT_TOPRIGHT          172
@@ -221,6 +231,14 @@
 #define IDC_SIZE_UPDATE_FILES_BYTES     193
 #define IDC_SIZE_UPDATE_FILES_KB        194
 #define IDC_SIZE_UPDATE_FILES_MB        195
+#define IDS_NEWSLETTERURL               196
+#define IDD_NPCQUESTS                   197
+#define IDS_REQUIREMENTS                198
+#define IDS_INSTRUCTIONS                199
+#define IDS_ACCEPT                      200
+#define IDS_CONTINUE                    201
+#define IDS_QUESTHELP                   202
+#define IDS_QUESTHELP_TITLE             203
 #define IDC_PORTNUM                     1000
 #define IDC_HOST                        1001
 #define IDC_ITEMLIST                    1002
@@ -235,6 +253,8 @@
 #define IDC_DESCNAME                    1011
 #define IDC_DESCBITMAP                  1012
 #define IDC_DESCFIXED                   1013
+#define IDC_DESCBOX2                    1013
+#define IDC_QUESTDESC                   1013
 #define IDD_OFFERRECEIVE                1014
 #define IDD_YELL                        1015
 #define IDC_NEXTMSG                     1016
@@ -253,6 +273,10 @@
 #define IDC_PARITYNONE                  1026
 #define IDC_PARITYEVEN                  1027
 #define IDC_PARITYODD                   1028
+#define IDC_DESCSCHOOLNAME              1029
+#define IDC_DESCSPELLLEVEL              1030
+#define IDC_DESCMANACOST                1031
+#define IDC_DESCVIGORCOST               1032
 #define IDC_INITSTR                     1033
 #define IDC_BAUD38400                   1034
 #define IDC_NUMBER                      1035
@@ -288,7 +312,6 @@
 #define IDC_HANGUP                      1079
 #define IDC_OK                          1080
 #define IDC_MAINLIST                    1081
-#define IDC_GUEST                       1081
 #define IDC_HOMEPAGE                    1082
 #define IDC_CREDITS                     1083
 #define IDC_SCREENSIZE                  1085
@@ -339,9 +362,12 @@
 #define IDC_IGNOREALL                   1141
 #define IDC_APPLY                       1141
 #define IDC_DRAWNAMES                   1143
+#define IDC_BUY                         1143
 #define IDC_SCROLLLOCK                  1145
 #define IDC_PAIN                        1146
+#define IDC_OFFER                       1146
 #define IDC_TOOLTIPS                    1147
+#define IDC_QUEST                       1147
 #define IDC_INVNUM                      1148
 #define IDC_DRAWSIGNNAMES               1149
 #define IDC_SERVERNUM                   1150
@@ -374,7 +400,6 @@
 #define IDC_SCROLL                      1167
 #define IDC_SPECIAL1                    1168
 #define IDC_SPECIAL2                    1169
-#define IDC_GUESTBAR                    1170
 #define IDC_ANIMATE1                    1171
 #define IDC_AGELABEL2                   1172
 #define IDC_PROFANE                     1173
@@ -421,7 +446,15 @@
 #define IDC_SPELLPOWER                  1215
 #define IDC_PARTICLENUM                 1216
 #define IDC_MIPMAPS                     1217
+#define IDC_WIREFRAME                   1218
+#define IDC_DYNLIGHTS                   1219
 #define IDC_AA_TEXT                     1221
+#define IDC_QUESTLIST                   1222
+#define IDC_QUESTNAME                   1223
+#define IDC_QUESTNODEDESC               1224
+#define IDC_QUESTDESCLABEL              1225
+#define IDC_QUESTREQLABEL               1226
+#define ID_QUESTHELP                    1227
 #define ID_GAME_EXIT                    3002
 #define ID_FONT_MAIL                    3014
 #define ID_FONT_LIST                    3015
@@ -480,14 +513,15 @@
 #define ID_HOMEPAGE                     3516
 #define ID_COLOR_QUESTHEADER            3517
 #define ID_GRAPHICS_MENU                3518
+#define ID_NEWSLETTER                   3519
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        197
-#define _APS_NEXT_COMMAND_VALUE         3519
-#define _APS_NEXT_CONTROL_VALUE         1222
+#define _APS_NEXT_RESOURCE_VALUE        205
+#define _APS_NEXT_COMMAND_VALUE         3520
+#define _APS_NEXT_CONTROL_VALUE         1228
 #define _APS_NEXT_SYMED_VALUE           105
 #endif
 #endif

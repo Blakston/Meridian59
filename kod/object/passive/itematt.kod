@@ -162,6 +162,17 @@ messages:
       return vrDM_Trigger;
    }
 
+   StringMatchesTrigger(string = $)
+   {
+      if (string = $
+         OR vrDM_Trigger = $)
+      {
+         return FALSE;
+      }
+
+      return StringContain(string, vrDM_Trigger);
+   }
+
    DMCreateItemAtt(who=$,string=$,oWeapon=$)
    {
       if who = $ OR string = $ OR oWeapon = $
@@ -275,6 +286,11 @@ messages:
    ItemCanAddSpecialAttributes()
    {
       return vbAllowSpecialAttributes;
+   }
+
+   ItemCanBeUsedInQuests()
+   {
+      return FALSE;
    }
 
    ItemGetSpellModifier(oCaster=$,oItem=$)
@@ -557,11 +573,12 @@ messages:
       return;
    }
 
-   AppendDescInfo(oItem = $,compound = $)
+   AppendDescInfo(oItem = $,compound = $, bShowAll = FALSE)
    "This adds the attribute's info to the informational part of an item's "
    "description, i.e. what the attribute does."
    {
-      if (Send(oItem,@GetIDStatusFromCompound,#compound=compound))
+      if (bShowAll
+         OR Send(oItem,@GetIDStatusFromCompound,#compound=compound))
       {
          AddPacket(4,vrInfoDesc);
       }

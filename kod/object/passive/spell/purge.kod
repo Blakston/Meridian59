@@ -24,9 +24,7 @@ resources:
    Purge_icon_rsc = ipurge.bgf
    Purge_desc_rsc = \
       "Reduces the effectiveness of the target's helpful personal enchantments.  "
-      "With enough power, it can even remove the enchantment completely.  "
-      "Requires five emeralds and two purple mushrooms to cast."
-
+      "With enough power, it can even remove the enchantment completely."
    Purge_on = \
       "A bright, holy light is trying to burn away your beneficial "
       "enchantments."
@@ -40,6 +38,7 @@ classvars:
    vrName = Purge_name_rsc
    vrIcon = Purge_icon_rsc
    vrDesc = Purge_desc_rsc
+   vrSpell_intro = Purge_spell_intro
 
    viSpell_num = SID_PURGE
    viSchool = SS_SHALILLE
@@ -131,7 +130,7 @@ messages:
       propagate;
    }
 
-   CastSpell(who=$,lTargets=$,iSpellPower=0)
+   DoSpellEffects(who=$,lTargets=$,iSpellPower=0)
    {
       local oTarget, lInfo, oSpell, lList, lEnchantmentList;
 
@@ -154,7 +153,7 @@ messages:
 
       Send(self,@DoPurge,#who=oTarget,#iSpellPower=iSpellPower);
 
-      propagate;
+      return TRUE;
    }
 
    // Override this to allow for non-outlaw self-casting of spell on Sacred
@@ -162,9 +161,8 @@ messages:
    GetAttackTargets(who=$,lTargets=$,report=TRUE)
    "Returns a list of targets the caster can attack."
    {
-      // If we're on Sacred Haven and we target ourselves, go for it.
-      if NOT Send(SYS,@IsPKAllowed)
-         AND lTargets <> $ AND First(lTargets) = who
+      // Always allow casting purge on self.
+      if lTargets <> $ AND First(lTargets) = who
       {
          return [who];
       }

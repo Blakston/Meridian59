@@ -23,6 +23,22 @@ extern int lineno;
 
 static int loop_depth = 0;
 SymbolTable st;
+static const_struct nil_const;
+
+typedef struct {
+   int in_use; // True if this file is in use.
+   char *filename;
+   Table constants;
+} include_constant_file;
+
+// A list of parsed included constant files (containing only constants)
+// saved so that they don't have to be parsed again. If they are encountered
+// in future files, the constants can be added from this list instead.
+list_type const_files;
+
+// If this is set to true, we are parsing an included constants file.
+// Used so that constants can be saved to the constants list.
+int parsing_included_constants;
 
 typedef struct {
   char   *two_letter_code;
@@ -225,10 +241,13 @@ void initialize_parser(void)
 {
    int i;
 
+   nil_const.type = C_NIL;
+
    st.globalvars = table_create(TABLESIZE);
    st.classvars = table_create(TABLESIZE);
    st.localvars = table_create(TABLESIZE);
    st.missingvars = table_create(TABLESIZE);
+   st.constants = table_create(TABLESIZE);
 
    /* Add function names to table of global identifiers */
    for (i=0; i < numfuncs; i++)
@@ -270,10 +289,53 @@ void initialize_parser(void)
 #endif
 
    st.recompile_list = NULL;
-   st.constants = NULL;
    st.num_strings = 0;
    st.strings = NULL;
    st.override_classvars = NULL;
+   const_files = NULL;
+}
+/************************************************************************/
+/* include_const_file_parse: Determine if we have to parse this file.
+ *   Also set a boolean so after parsing the file, the original can use it.
+ */
+int include_const_file_parse(char *filename)
+{
+   for (list_type l = const_files; l != NULL; l = l->next)
+   {
+      include_constant_file* f = (include_constant_file*)l->data;
+      if (stricmp(f->filename, filename) == 0)
+      {
+         // Mark this constants file as in use so it can be searched.
+         f->in_use = True;
+
+         // Return false == do not open/parse file.
+         return False;
+      }
+   }
+
+   // Add the new constant file to the list.
+   // Must be at the beginning.
+   include_constant_file *i = (include_constant_file *)SafeMalloc(sizeof(include_constant_file));
+   i->filename = strdup(filename);
+   i->constants = table_create(TABLESIZE);
+
+   // Parsing this one now so must be using it.
+   i->in_use = True;
+
+   list_type new_file = list_create(i);
+   const_files = list_append(new_file, const_files);
+
+   // Set parsing_included_constants so we save the constants.
+   parsing_included_constants = True;
+
+   return True;
+}
+/************************************************************************/
+/* include_const_file_parse_finished: Unset the var used to track parsing.
+*/
+void include_const_file_parse_finished()
+{
+   parsing_included_constants = False;
 }
 /************************************************************************/
 /* Hash on an indentifier's name */
@@ -327,6 +389,28 @@ int is_parent(class_type parent, class_type child)
    return is_parent(parent, child->superclass);
 }
 /************************************************************************/
+/*
+ * is_unary_list_op: returns True if opcode is a unary list op.
+ */
+int is_unary_list_op(int op)
+{
+   return (op == FIRST_OP || op == REST_OP);
+}
+/************************************************************************/
+/*
+* get_list_op_name: returns string name for list opcodes, for errors.
+*/
+char * get_unarycall_op_name(int op)
+{
+   switch (op)
+   {
+   case FIRST_OP: return "First";
+   case REST_OP: return "Rest";
+   case GETCLASS_OP: return "GetClass";
+   }
+   return "Unknown";
+}
+/************************************************************************/
 id_type duplicate_id(id_type id)
 {
    id_type temp = (id_type) SafeMalloc(sizeof(id_struct));
@@ -335,14 +419,17 @@ id_type duplicate_id(id_type id)
    temp->type = id->type;
    temp->ownernum = id->ownernum;
    temp->idnum = id->idnum;
+   temp->reference_num = id->reference_num;
+   temp->is_string_rsc = id->is_string_rsc;
    return temp;
 }
 /************************************************************************/
 /* 
  * lookup_id: Translate from an identifier name to an ID number.
  *   Returns id that matches the given id, or NULL if none is in table.
+ *   refcount is true if we should increment the ref number for this var.
  */
-id_type lookup_id(id_type id)
+id_type lookup_id(id_type id, bool refcount = true)
 {
    id_type record;
 
@@ -360,6 +447,9 @@ id_type lookup_id(id_type id)
       id->idnum = record->idnum;
       id->ownernum = record->ownernum;
       id->source = record->source;
+      if (refcount)
+         record->reference_num++;
+      id->reference_num = record->reference_num;
       return record;
    }
 
@@ -371,6 +461,9 @@ id_type lookup_id(id_type id)
       id->idnum = record->idnum;
       id->ownernum = record->ownernum;
       id->source = record->source;
+      if (refcount)
+         record->reference_num++;
+      id->reference_num = record->reference_num;
       return record;
    }
 
@@ -382,6 +475,10 @@ id_type lookup_id(id_type id)
       id->idnum = record->idnum;
       id->ownernum = record->ownernum;
       id->source = record->source;
+      id->is_string_rsc = record->is_string_rsc;
+      if (refcount)
+         record->reference_num++;
+      id->reference_num = record->reference_num;
       return record;
    }
 
@@ -393,7 +490,46 @@ id_type lookup_id(id_type id)
       id->idnum = record->idnum;
       id->ownernum = record->ownernum;
       id->source = record->source;
+      id->is_string_rsc = record->is_string_rsc;
+      if (refcount)
+         record->reference_num++;
+      id->reference_num = record->reference_num;
       return record;
+   }
+
+   /* Check constants table */
+   record = (id_type)table_lookup(st.constants, (void *)id, id_hash, id_compare);
+   if (record != NULL)
+   {
+      id->type = record->type;
+      id->idnum = record->idnum;
+      id->ownernum = record->ownernum;
+      id->source = record->source;
+      if (refcount)
+         record->reference_num++;
+      id->reference_num = record->reference_num;
+      return record;
+   }
+
+   // Check any include constants files in use.
+   for (list_type l = const_files; l != NULL; l = l->next)
+   {
+      include_constant_file* f = (include_constant_file*)l->data;
+      if (f->in_use)
+      {
+         record = (id_type)table_lookup(f->constants, (void *)id, id_hash, id_compare);
+         if (record != NULL)
+         {
+            id->type = record->type;
+            id->idnum = record->idnum;
+            id->ownernum = record->ownernum;
+            id->source = record->source;
+            if (refcount)
+               record->reference_num++;
+            id->reference_num = record->reference_num;
+            return record;
+         }
+      }
    }
 
    /* Couldn't find the identifier name */
@@ -429,7 +565,7 @@ int add_identifier(id_type id, int type)
 
    case I_CONSTANT:
       /* Don't give constants id #s */
-      if (table_insert(st.classvars, (void *) id, id_hash, id_compare) != 0)
+      if (table_insert(st.constants, (void *) id, id_hash, id_compare) != 0)
 	 return 1;
       break;
       
@@ -446,8 +582,8 @@ int add_identifier(id_type id, int type)
       break;
 
    case I_PROPERTY:
-      if (table_insert(st.classvars, (void *) id, id_hash, id_compare) == 0)
-	 id->idnum = ++st.maxproperties;
+      if (table_insert(st.classvars, (void *)id, id_hash, id_compare) == 0)
+         id->idnum = ++st.maxproperties;
       else return 1;
       break;
 
@@ -494,10 +630,11 @@ const_type make_numeric_constant(int num)
 /************************************************************************/
 const_type make_nil_constant(void)
 {
-   const_type c = (const_type) SafeMalloc(sizeof(const_struct));
-
-   c->type = C_NIL;
-   return c;
+   // Return a global nil object here, as this function is called many times.
+   // As there is no deleting of IDs anywhere, this is safe (for now).
+   //const_type c = (const_type) SafeMalloc(sizeof(const_struct));
+   //c->type = C_NIL;
+   return &nil_const;
 }
 /************************************************************************/
 const_type make_number_from_constant_id(id_type id)
@@ -563,6 +700,8 @@ id_type make_identifier(char *name)
 {
    id_type id = (id_type) SafeMalloc(sizeof(id_struct));
 
+   id->reference_num = 0;
+   id->is_string_rsc = false;
    id->type = I_UNDEFINED;   /* Type is undefined until it's looked up */
    id->name = name;
    id->source = COMPILE;     /* Id came from a newly compiled file */
@@ -684,13 +823,11 @@ expr_type make_expr_from_id(id_type id)
    case I_CONSTANT:
    {
       const_type c = (const_type) SafeMalloc(sizeof(const_struct));
-      id_type temp;
 
       /* Turn constant id reference into the constant itself */
       c->type = C_NUMBER;
 
-      temp = (id_type) list_find_item(st.constants, id, id_compare);
-      c->value.numval = temp->source; /* Value is stored in source field */
+      c->value.numval = id->source; /* Value is stored in source field */
 
       e->type = E_CONSTANT;
       e->value.constval = c;
@@ -781,7 +918,11 @@ expr_type make_isclass_op(expr_type expr1, expr_type expr2)
          action_error("Found IsClass call always evaluating to true!");
       }
    }
-   else if (expr2->type == E_CALL || expr2->type == E_IDENTIFIER)
+   else if (expr2->type == E_CALL
+      || expr2->type == E_IDENTIFIER
+      || (expr2->type == E_UNARY_OP
+         && (is_unary_list_op(expr2->value.unary_opval.op)
+         || expr2->value.unary_opval.op == GETCLASS_OP)))
    {
       // These are valid ways of obtaining class ID at runtime.
       e->value.binary_opval.op = ISCLASS_OP;
@@ -792,13 +933,33 @@ expr_type make_isclass_op(expr_type expr1, expr_type expr2)
       action_error("IsClass call must have class literal, identifier or call for class field.");
    }
 
-   // Check LHS also - must be call or ID.
+   // Check LHS also - must be call, ID or First unary OP.
    if (expr1->type == E_CONSTANT)
       action_error("IsClass call cannot use constant for object field.");
    else if (expr1->type == E_BINARY_OP)
       action_error("IsClass call cannot use binary op for object field.");
-   else if (expr1->type == E_UNARY_OP)
+   else if (expr1->type == E_UNARY_OP && !is_unary_list_op(expr1->value.unary_opval.op))
       action_error("IsClass call cannot use unary op for object field.");
+
+   return e;
+}
+/************************************************************************/
+expr_type make_unarycall_op(int op, expr_type expr1)
+{
+   expr_type e = (expr_type)SafeMalloc(sizeof(expr_struct));
+
+   // Expr1 must be call, ID or list (First/Rest) unary OP.
+   if (expr1->type == E_CONSTANT)
+      action_error("%s call cannot use constant as an argument.", get_unarycall_op_name(op));
+   else if (expr1->type == E_BINARY_OP)
+      action_error("%s call cannot use binary op as an argument.", get_unarycall_op_name(op));
+   else if (expr1->type == E_UNARY_OP && !is_unary_list_op(expr1->value.unary_opval.op))
+      action_error("%s call cannot use unary op as an argument.", get_unarycall_op_name(op));
+
+   e->type = E_UNARY_OP;
+   e->value.unary_opval.exp = expr1;
+   e->value.unary_opval.op = op;
+   e->lineno = lineno;
 
    return e;
 }
@@ -835,6 +996,15 @@ arg_type make_arg_from_setting(id_type id, expr_type expr)
    arg->type = ARG_SETTING;
    arg->value.setting_val = s;
    return arg;
+}
+/************************************************************************/
+id_type make_constant_id_noeol(id_type id, expr_type expr)
+{
+   // Returns error for no newline character after a constant declaration.
+   // e.g. constants include file without a blank line at the end.
+   action_error("Missing newline after constant declaration for %s", id->name);
+
+   return make_constant_id(id, expr);
 }
 /************************************************************************/
 id_type make_constant_id(id_type id, expr_type expr)
@@ -893,8 +1063,13 @@ id_type make_constant_id(id_type id, expr_type expr)
       break;
    }
 
-   /* Add to list of constants in this class */
-   st.constants = list_add_item(st.constants, id);
+   // If this is a parsed include file, also save the constant to the const_files
+   // table so we don't have to parse this file again.
+   if (parsing_included_constants)
+   {
+      include_constant_file* f = (include_constant_file*)const_files->data;
+      table_insert(f->constants, (void *)id, id_hash, id_compare);
+   }
 
    return id;
 }
@@ -909,7 +1084,7 @@ param_type make_parameter(id_type id, expr_type e)
       return p;
    }
 
-   lookup_id(id);
+   lookup_id(id, false);
 
    /* Left-hand side must not have appeared before, except perhaps as a parameter */
    switch (id->type) {
@@ -955,7 +1130,7 @@ param_type make_parameter(id_type id, expr_type e)
 id_type make_var(id_type id)
 {
    /* Add to list of local variables, if it hasn't been defined */
-   lookup_id(id);
+   lookup_id(id, false);
 
    switch(id->type)
    {
@@ -983,7 +1158,7 @@ classvar_type make_classvar(id_type id, expr_type e)
       return cv;
    }
 
-   lookup_id(id);
+   lookup_id(id, false);
    switch(id->type) 
    {
    case I_CONSTANT:
@@ -1027,7 +1202,7 @@ property_type make_property(id_type id, expr_type e)
 
    /* Left-hand side must not have appeared as a property before, except possibly as a
     * property of one of our superclasses.  Properties shadow other global names. */
-   lookup_id(id);
+   lookup_id(id, false);
    switch(id->type) {
 
    case I_CONSTANT:
@@ -1117,6 +1292,15 @@ int make_language_id(char *str)
    return lid;
 }
 /************************************************************************/
+resource_type make_resource_noeol(id_type id, const_type c, int la_id)
+{
+   // Returns error for no newline character after a resource declaration.
+   // e.g. language resource include file without a blank line at the end.
+   action_error("Missing newline after resource declaration for %s",id->name);
+
+   return make_resource(id, c, la_id);
+}
+/************************************************************************/
 resource_type make_resource(id_type id, const_type c, int la_id)
 {
    id_type old_id;
@@ -1126,8 +1310,9 @@ resource_type make_resource(id_type id, const_type c, int la_id)
 
    id->ownernum = st.curclass;
 
-   /* Left-hand side must not have appeared before, except maybe in dbase */
-   old_id = lookup_id(id);
+   /* Left-hand side must not have appeared before, except maybe in dbase
+      This is an initial assignment so don't increment ref count. */
+   old_id = lookup_id(id, false);
 
    /* Check if this resource is already present in another class.
     * old_id will be NULL if it isn't, and if it is defined in the
@@ -1138,6 +1323,10 @@ resource_type make_resource(id_type id, const_type c, int la_id)
    switch(id->type) {
    case I_UNDEFINED:
       id->source = COMPILE;
+      // Keep track of whether this rsc ID is for a string, in case
+      // we are tracking string rsc references (hacky, but useful).
+      if (c->type == C_STRING)
+         id->is_string_rsc = true;
       add_identifier(id, I_RESOURCE);
       break;
 
@@ -1814,7 +2003,7 @@ class_type make_class_signature(id_type class_id, id_type superclass_id)
    c->class_id = class_id;
 
    /* Class name must not have appeared before */
-   old_id = lookup_id(class_id);
+   old_id = lookup_id(class_id, false);
 
    switch(class_id->type)
    {
@@ -1965,8 +2154,15 @@ class_type make_class(class_type c, list_type resources, list_type classvars,
    table_delete(st.classvars);
    st.override_classvars = NULL;
 
-   /* Erase constant list */
-   st.constants = list_delete(st.constants);
+   /* Clean out constant table */
+   table_delete(st.constants);
+
+   // Set all constant files to not in use.
+   for (list_type l = const_files; l != NULL; l = l->next)
+   {
+      include_constant_file* f = (include_constant_file*)l->data;
+      f->in_use = False;
+   }
 
    st.maxproperties = 0;  // Property #0 is reserved for SELF
    st.maxclassvars  = -1;

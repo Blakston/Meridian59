@@ -5,13 +5,13 @@ breathoflife_caster_msg_rsc = de \
    "Du gibst Teile deiner Lebenskraft an %s%s. Du opferst ~r~B%i~B~n Lebenspunkte."
 breathoflife_name_rsc = de "Hauch des Lebens"
 breathoflife_desc_rsc = de \
-   "Die mächtige Kraft Sha-Lills überträgt die Lebensenergie des Zauberers "
-   "in einen anderen Körper. Der Zauber benötigt ein Kraut."
+   "Die mächtige Kraft Shal'illes überträgt die Lebensenergie des Zauberers "
+   "in einen anderen Körper."
 breathoflife_unnecessary_rsc = de \
    "%s%s kann nicht noch mehr Lebenspunkte von dir aufnehmen."
 breathoflife_toohurt_rsc = de \
-   "Du hast nicht genug Lebenspunkte um sie an Andere weiterzugeben!"
+   "Du hast nicht genug Lebenspunkte, um diese an andere Charaktere weiterzugeben!"
 breathoflife_notonself_rsc = de \
-   "Du kannst Hauch des Lebens nicht auf dich selber zaubern."
+   "Du kannst den Hauch des Lebens nicht auf dich selbst zaubern."
 breathoflife_spell_intro = de \
-   "Shal'ill Level 1: Die mächtige Kraft Sha-Lills überträgt die Lebensenergie."
+   "Shal'ill Level 1: Die mächtige Kraft Shal'illes überträgt die Lebensenergie."

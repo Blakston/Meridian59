@@ -22,8 +22,7 @@ resources:
    Silence_icon_rsc = isilence.bgf
    Silence_desc_rsc = \
       "Muffles all speech preventing spell casting and communication as long "
-      "as caster concentrates.  Requires dark angel feathers and purple "
-      "mushrooms."
+      "as caster concentrates."
    Silence_unnecessary = "This area already is already silenced."
    Silence_on = "A curtain of silence falls across the room."
    Silence_off = "The curtain of silence is lifted."
@@ -51,8 +50,7 @@ classvars:
    viMana = 10
    viSpell_level = 3
 
-   viManaDrain = 10      // Drain is amount used every viDrainTime milliseconds
-   viDrainTime = 1000    // Drain some mana every viDrainTime milliseconds
+   viManaDrain = 10000            // Mana drained per second (10^3)
    
    viChance_To_Increase = 10
    viMeditate_ratio = 50
@@ -76,7 +74,7 @@ messages:
       return;
    }
 
-   CastSpell(who = $, iSpellPower = 0)
+   DoSpellEffects(who = $, iSpellPower = 0)
    "Initiation point for the spell."
    {
       local oRoom, lJalaInfo, oJalaCaster, oJalaSpell, lJalaState;
@@ -114,17 +112,58 @@ messages:
          }
       }
 
-      propagate;
+      return TRUE;
    }
 
-   BreakTrance(who=$, event=$, state=$, location=$)
-   {
-      local oRoom;
+   StartPeriodicEnchantment(where=$, state=$)
+   "Sends enchantment message to room like CastSpell for most room enchantments, "
+   "but silent, and done as often as necessary"
+    {
+      local oCaster;
 
+      oCaster = First(state);
+
+      Send(where,@RoomStartEnchantment,#what=self,#time=viTickDuration,
+         #state=state,#addicon=FALSE,#lastcall=FALSE);
+
+      return;
+   }
+
+   StartEnchantmentNewOccupant(who = $)
+   "Called on new occupants of the enchanted room."
+   {
+      Send(who,@MsgSendUser,#message_rsc=Silence_new_entrant);
+
+      return;
+   }
+
+   BreakTrance(event=$)
+   {
       if event = EVENT_ATTACK
       {
          return FALSE;
       }
+
+      propagate;
+   }
+
+   EndSpell(where = $, state = $)
+   "Called when spell expires."
+   {
+      Send(where,@SomeoneSaid,#type=SAY_MESSAGE,#string=Silence_off,#what=self);
+
+      return;
+   }
+
+   SpellBannedInArena()
+   {
+      return TRUE;
+   }
+
+   TranceEnding(who=$,location=$)
+   "Allow maintained spells to do something when their trance breaks."
+   {
+      local oRoom;
 
       if location = $
       {
@@ -138,64 +177,6 @@ messages:
       Send(oRoom,@RemoveEnchantment,#what=self);
 
       propagate;
-   }
-
-   StartPeriodicEnchantment(where=$, state=$)
-   "Sends enchantment message to room like CastSpell for most room enchantments, "
-   "but silent, and done as often as necessary"
-    {
-      local oCaster;
-
-      oCaster = First(state);
-
-      // If caster runs out of mana or loses trance, spell ends.
-      if Send(oCaster,@GetMana) < viManaDrain * 2
-      {
-         Send(where,@RoomStartEnchantment,#what=self,
-               #time=Send(self,@GetDuration,#iSpellPower=Nth(state,2)),
-               #state=state,#addicon=FALSE,#lastcall=TRUE);
-      }
-      else
-      {
-         Send(where,@RoomStartEnchantment,#what=self,
-               #time=Send(self,@GetDuration,#iSpellPower=Nth(state,2)),
-               #state=state,#addicon=FALSE,#lastcall=FALSE);
-      }
-
-      Send(oCaster,@LoseMana,#amount=viManaDrain);
-
-      return;
-   }
-
-   StartEnchantmentNewOccupant(who = $)
-   "Called on new occupants of the enchanted room."
-   {
-      Send(who,@MsgSendUser,#message_rsc=Silence_new_entrant);
-
-      return;
-   }
-
-   EndSpell(where = $, state = $)
-   "Called when spell expires."
-   {
-      Send(where,@SomeoneSaid,#type=SAY_MESSAGE,#string=Silence_off,#what=self);
-
-      return;
-   }
-
-   GetDuration(iSpellPower=0)
-   {
-      local iDuration;
-
-      // Better spellpower means longer time between drains.
-      iDuration = viDrainTime + ((viDrainTime * iSpellPower) / SPELLPOWER_MAXIMUM);
-
-      return iDuration;
-   }
-
-   SpellBannedInArena()
-   {
-      return TRUE;
    }
 
 end

@@ -22,8 +22,7 @@ resources:
    ArmorOfGort_icon_rsc = igort.bgf
    ArmorOfGort_desc_rsc = \
       "Surrounds the caster with a powerful field which deflects "
-      "damage from extreme blows.  "
-      "Requires two blue dragon scales to cast."
+      "damage from extreme blows."
    gort_enchantment_rsc = \
       "\n\nYour current armor of Gort enchantment adds 1-%i armor or "
       "reduces non-magical damage to 15, partially magical damage to 20, and "
@@ -112,15 +111,21 @@ messages:
       return iSpellPower;
    }
 
-   PriorityModifyDefenseDamage(who=$,what=$,damage=$,atype=0,aspell =0)
+   PriorityModifyDefenseDamage(who=$,what=$,damage=$,atype=0,stype=0)
    {
       local iSpellPower, iAbsorbed, iMax, iFinalDamage, iFinalAbsorbed;
+
+      // Don't bother with 0 damage hits.
+      if (damage = 0)
+      {
+         return damage;
+      }
 
       iSpellPower = Send(who,@GetEnchantedState,#what=self);
       iMax = 1500;
       iAbsorbed = bound(random(0,iSpellPower*4),0,400);
 
-      if aspell <> 0
+      if stype<> 0
       {
          // Reduce damage if part of the damage is spell
          if atype <> 0
@@ -144,7 +149,7 @@ messages:
       if IsClass(what,&User)
          AND iFinalAbsorbed > 0
       {
-         if aspell <> 0
+         if stype<> 0
          {
             if atype <> 0
             {
@@ -169,7 +174,7 @@ messages:
       return iFinalDamage;
    }
 
-   ModifyDefenseDamage(who=$,what=$,damage=$,atype=0,aspell=0)
+   ModifyDefenseDamage(who=$,what=$,damage=$,atype=0,stype=0)
    {
       return damage;
    }

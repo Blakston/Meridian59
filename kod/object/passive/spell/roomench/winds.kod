@@ -26,8 +26,7 @@ resources:
    winds_icon_rsc = iwinds.bgf
    winds_desc_rsc = \
       "Summons powerful winds which render ranged attacks more difficult "
-      "for several minutes.  Requires three elderberries and a purple "
-      "mushroom to cast."
+      "for several minutes."
    winds_already_enchanted = "Magical winds are already present."
    winds_on = "Violent winds suddenly sweep the area and buffet your limbs."
    winds_off = "The winds slow and then cease."
@@ -74,12 +73,19 @@ messages:
       return First(state) % 100;
    }
 
-   CastSpell(who = $, iSpellPower = 0)
+   DoSpellEffects(who = $, iSpellPower = 0)
    "Initiation point for the spell."
    {
       local oRoom;
 
-      oRoom = Send(who,@GetOwner);
+      if (IsClass(who,&Room))
+      {
+         oRoom = who;
+      }
+      else
+      {
+         oRoom = Send(who,@GetOwner);
+      }
 
       // Global effects of the enchantment.
       Send(oRoom,@SomeoneSaid,#type=SAY_MESSAGE,#string=winds_on,#what=self);
@@ -88,7 +94,7 @@ messages:
       Send(oRoom,@EnchantAllOccupants,#what=self,#iSpellPower=iSpellPower,
             #state=[iSpellPower, who]);
 
-      propagate;
+      return TRUE;
    }
 
    StartEnchantmentNewOccupant(who = $, state=$)
@@ -163,7 +169,9 @@ messages:
       oCaster = Nth(state,2);
 
       if ((who = self AND NOT vbRoomEnchHitCaster)
-         OR NOT Send(oCaster,@AllowBattlerAttack,#victim=who,#stroke_obj=self))
+         OR (IsClass(oCaster,&Battler)
+            AND NOT Send(oCaster,@AllowBattlerAttack,#victim=who,
+                        #stroke_obj=self)))
       {
          return FALSE;
       }
@@ -179,7 +187,9 @@ messages:
       oCaster = Nth(state,2);
 
       if ((who = self AND NOT vbRoomEnchHitCaster)
-         OR NOT Send(oCaster,@AllowBattlerAttack,#victim=who,#stroke_obj=self))
+         OR (IsClass(oCaster,&Battler)
+            AND NOT Send(oCaster,@AllowBattlerAttack,#victim=who,
+                        #stroke_obj=self)))
       {
          return FALSE;
       }
@@ -201,6 +211,11 @@ messages:
    HasConditionalEffect()
    {
       return TRUE;
+   }
+
+   GetScrollClass()
+   {
+      return &WindScroll;
    }
 
 end

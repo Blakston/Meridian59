@@ -47,14 +47,14 @@ classvars:
    vrDead_name = ant_dead_name_rsc
 
    viSpeed = SPEED_SLOW
-   viAttack_type = ATCK_WEAP_BITE
+   viAttack_type = ATK_TYPE_BITE
    viLevel = 40
    viDifficulty = 4
    viVisionDistance = 14
    viKarma = -10
    viCashmin = 100
    viCashmax = 300
-   viDefault_behavior = AI_FIGHT_AGGRESSIVE | AI_FIGHT_WIZARD_KILLER
+   viDefault_behavior = AI_FIGHT_AGGRESSIVE
    viAttributes = MOB_SPASM
 
    viTreasure_type = TID_WIMPY_MEDIUM
@@ -64,6 +64,13 @@ classvars:
    vrSound_aware = ant_sound_aware
    vrSound_death = ant_sound_death
 
+   vbCanBleed = FALSE
+   vbCanSiphon = FALSE
+
+   viBleedChance = 15
+   viBleedStrength = 500
+   viBleedDuration = 8000
+
 properties:
 
    piAnimation = ANIM_NONE
@@ -72,7 +79,7 @@ messages:
 
    Constructed()
    {
-      plResistances = [ [-ATCK_WEAP_ALL, -20] ];
+      plResistances = [ [-ATK_TYPE_ALL, -20] ];
 
       propagate;
    }
@@ -99,15 +106,6 @@ messages:
       propagate;
    }
 
-   MonsterAttack(what = $)
-   {
-      piAnimation = ANIM_ATTACK;
-      Send(poOwner,@SomethingChanged,#what=self);
-      piAnimation = ANIM_NONE;
-
-      return;
-   }
-
    DoLegSpasm()
    {
       piAnimation = ANIM_ATTACK;
@@ -126,8 +124,7 @@ messages:
 
    SendLookAnimation()
    {
-      AddPacket(1,ANIMATE_CYCLE);
-      AddPacket(4,150, 2,1, 2,3);
+      AddPacket(1,ANIMATE_CYCLE, 4,150, 2,1, 2,3);
 
       return;
    }

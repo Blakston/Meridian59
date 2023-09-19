@@ -11,7 +11,7 @@
 
 #include "client.h"
 
-#define ATTACK_DELAY 250  // Minimum number of milliseconds between user attacks
+#define ATTACK_DELAY 200  // Minimum number of milliseconds between user attacks
 
 extern player_info player;
 extern room_type current_room;
@@ -26,7 +26,7 @@ static ID idTarget = INVALID_ID;		//	Target object, or INVALID_ID if no target s
 static void ApplyCallback(ID obj2);
 static void SetDescParamsByRoomObject(room_contents_node *r, HWND hwnd);
 
-extern BOOL		gbMouselook;
+BOOL		gbMouselook;
 extern RECT		gD3DRect;
 /************************************************************************/
 /*
@@ -64,7 +64,7 @@ void UserAttack(int action)
    
    if (sel_list != NULL)
    {
-      MoveUpdatePosition();   // Send our exact position, so that we try to attack in range
+      //MoveUpdatePosition();   // Send our exact position, so that we try to attack in range
 
       target_obj = (room_contents_node *) (sel_list->data);
 
@@ -655,17 +655,23 @@ void SetDescParamsByRoomObject(room_contents_node *r, HWND hwnd)
    if (r->distance <= CLOSE_DISTANCE)
    {
       if (r->obj.flags & OF_CONTAINER)
-	 params |= DESC_INSIDE;
-      
+         params |= DESC_INSIDE;
+
       if (r->obj.flags & OF_ACTIVATABLE && !(r->obj.flags & OF_PLAYER))
-	 params |= DESC_ACTIVATE;
+         params |= DESC_ACTIVATE;
 
       if (r->obj.flags & OF_GETTABLE)
       {
-	 params |= DESC_GET;
-	 if (!(r->obj.flags & OF_ACTIVATABLE))
-	    params |= DESC_USE;	 
+         params |= DESC_GET;
+         if (!(r->obj.flags & OF_ACTIVATABLE))
+            params |= DESC_USE;
       }
+      if (r->obj.flags & OF_BUYABLE)
+         params |= DESC_BUY;
+      if ((r->obj.flags & OF_OFFERABLE) && !(r->obj.flags & OF_PLAYER))
+         params |= DESC_OFFER;
+      if (r->obj.flags & OF_NPCQUESTABLE)
+         params |= DESC_QUEST;
    }
    SetDescParams(hwnd, params);
 }

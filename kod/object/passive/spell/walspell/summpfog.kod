@@ -21,13 +21,10 @@ resources:
    SummonPoisonFog_name_rsc = "poison fog"
    SummonPoisonFog_icon_rsc = ipoiscld.bgf
    SummonPoisonFog_desc_rsc = \
-      "Creates a pungent cloud of poisonous fog.  "
-      "Requires entroot berries to cast."
-                              
+      "Creates a pungent cloud of poisonous fog."
+
    SummonPoisonFog_cast_rsc = \
       "A thick, pungent fog rises from the ground before you."
-   SummonPoisonFog_failed_rsc = \
-      "There is too much summoning magic focused here to create fog." 
 
    SummonPoisonFog_sound = qor.ogg
 
@@ -45,17 +42,25 @@ classvars:
 
    viCast_time = 2000
    vrSucceed_wav = SummonPoisonFog_sound
+   vrSuccess = SummonPoisonFog_cast_rsc
+
    viChance_To_Increase = 20
    viMeditate_ratio = 30
 
+   vbCastable_in_HappyLand = FALSE
+
    viHarmful = TRUE
+   vbCanCastOnOthers = FALSE
 
    // Poison fog can't kill anyone, so don't warn about being a murderer.
    viWallCanKill = FALSE
 
-   viNumElements = 9
-
-   vrSummonLimitMsg = SummonPoisonFog_failed_rsc
+   //// Seed parameters
+   viElementDuration = 60000
+   viElementSpeed = 50
+   viElementCharges = 27
+   viElementNoise = 0
+   viElementCurve = 961024
 
 properties:
 
@@ -70,133 +75,36 @@ messages:
       return;
    }
 
-   CastSpell(who = $, lTargets = $, iSpellPower = 0)
+   GetNumSpellTargets()
    {
-      Send(who,@MsgSendUser,#message_rsc=SummonPoisonFog_cast_rsc);
+      return vbCanCastOnOthers;
+   }
+
+   PlaceWallElements(seed = $, lTargets = $)
+   {
+      local oCaster, oRoom, iAngle, lSeed, iXFineStep,iYFineStep;
+
+      oCaster = First(seed);
+      oRoom = Send(oCaster,@GetOwner);
+      iAngle = Nth(seed,6);
+
+      iXFineStep = Send(oRoom,@GetXFineStep,#angle=iAngle)*3;
+      iYFineStep = Send(oRoom,@GetYFineStep,#angle=iAngle)*3;
+
+      lSeed = ListCopy(seed);
+      SetNth(lSeed,6,0);
+
+      Send(self,@SpawnElement,#seed=lSeed,#who=oCaster,
+         #yfineoffset=FINENESS_HALF+iYFineStep,
+         #xfineoffset=FINENESS_HALF+iXFineStep,
+         #walltype=&PoisonFogCloud);
 
       propagate;
    }
 
-   PlaceWallElements(who = $, iSpellPower = 0)
+   GetScrollClass()
    {
-      local oRoom, iRow, iCol, iFine_Row, iFine_Col, iAngle, iOdds, iDuration,
-            oElement;
-
-      iAngle = Send(who,@GetAngle);
-      iOdds = 50+(iSpellPower/2);
-      iOdds = Bound(iOdds,50,90);
-
-      iDuration = (iSpellPower * 4) / 3 + 20;
-      iDuration = Bound(iDuration,20,130);
-
-      // Facing East
-      if iAngle >= ANGLE_ENE OR iAngle < ANGLE_ESE
-      {
-         iCol = Send(who,@GetCol) + 2;
-         iRow = Send(who,@GetRow);
-      }
-
-      // Facing SouthEast
-      if iAngle >= ANGLE_ESE AND iAngle < ANGLE_SSE
-      {
-         iRow = Send(who,@GetRow) + 2;
-         iCol = Send(who,@GetCol) + 2;
-      }
-
-      // Facing South
-      if iAngle >= ANGLE_SSE AND iAngle < ANGLE_SSW
-      {
-         iRow = Send(who,@GetRow) + 2;
-         iCol = Send(who,@GetCol);
-      }
-
-      // Facing SouthWest
-      if iAngle >= ANGLE_SSW AND iAngle < ANGLE_WSW
-      {
-         iRow = Send(who,@GetRow) + 2;
-         iCol = Send(who,@GetCol) - 2;
-      }
-
-      // Facing West
-      if iAngle >= ANGLE_WSW AND iAngle < ANGLE_WNW
-      {
-         iCol = Send(who,@GetCol) - 2;
-         iRow = Send(who,@GetRow);
-      }
-
-      // Facing NorthWest
-      if iAngle >= ANGLE_WNW AND iAngle < ANGLE_NNW
-      {
-         iRow = Send(who,@GetRow) - 2;
-         iCol = Send(who,@GetCol) - 2;
-      }
-
-      // Facing North
-      if iAngle >= ANGLE_NNW AND iAngle < ANGLE_NNE
-      {
-         iRow = Send(who,@GetRow) - 2;
-         iCol = Send(who,@GetCol);
-      }
-
-      // Facing NorthEast
-      if iAngle >= ANGLE_NNE AND iAngle < ANGLE_ENE
-      {
-         iRow = Send(who,@GetRow) - 2;
-         iCol = Send(who,@GetCol) + 2;
-      }
-
-      oRoom = Send(who,@GetOwner);
-
-      iFine_Row = Send(who,@GetFineRow);
-      iFine_Col = Send(who,@GetFineCol);
-
-      // Center, then clockwise from 12 o'clock
-      oElement = Create(&PoisonFogCloud,#Odds=iOdds,#Caster=who,
-                         #Duration=iDuration);
-      Send(oRoom,@NewHold,#what=oElement,#new_row=iRow,#new_col=iCol,
-           #fine_row=iFine_Row,#fine_col=iFine_Col);
-
-      oElement = Create(&PoisonFogCloud,#Odds=iOdds,#Caster=who,
-                         #Duration=iDuration);
-      Send(oRoom,@NewHold,#what=oElement,#new_row=iRow-1,#new_col=iCol,
-           #fine_row=iFine_Row,#fine_col=iFine_Col);
-
-      oElement = Create(&PoisonFogCloud,#Odds=iOdds,#Caster=who,
-                         #Duration=iDuration);
-      Send(oRoom,@NewHold,#what=oElement,#new_row=iRow-1,#new_col=iCol+1,
-           #fine_row=iFine_Row,#fine_col=iFine_Col);
-
-      oElement = Create(&PoisonFogCloud,#Odds=iOdds,#Caster=who,
-                         #Duration=iDuration);
-      Send(oRoom,@NewHold,#what=oElement,#new_row=iRow,#new_col=iCol+1,
-           #fine_row=iFine_Row,#fine_col=iFine_Col);
-
-      oElement = Create(&PoisonFogCloud,#Odds=iOdds,#Caster=who,
-                         #Duration=iDuration);
-      Send(oRoom,@NewHold,#what=oElement,#new_row=iRow+1,#new_col=iCol+1,
-           #fine_row=iFine_Row,#fine_col=iFine_Col);
-
-      oElement = Create(&PoisonFogCloud,#Odds=iOdds,#Caster=who,
-                         #Duration=iDuration);
-      Send(oRoom,@NewHold,#what=oElement,#new_row=iRow+1,#new_col=iCol,
-           #fine_row=iFine_Row,#fine_col=iFine_Col);
-
-      oElement = Create(&PoisonFogCloud,#Odds=iOdds,#Caster=who,
-                         #Duration=iDuration);
-      Send(oRoom,@NewHold,#what=oElement,#new_row=iRow+1,#new_col=iCol-1,
-           #fine_row=iFine_Row,#fine_col=iFine_Col);
-
-      oElement = Create(&PoisonFogCloud,#Odds=iOdds,#Caster=who,
-                         #Duration=iDuration);
-      Send(oRoom,@NewHold,#what=oElement,#new_row=iRow,#new_col=iCol-1,
-           #fine_row=iFine_Row,#fine_col=iFine_Col);
-
-      oElement = Create(&PoisonFogCloud,#Odds=iOdds,#Caster=who,
-                         #Duration=iDuration);
-      Send(oRoom,@NewHold,#what=oElement,#new_row=iRow-1,#new_col=iCol-1,
-           #fine_row=iFine_Row,#fine_col=iFine_Col);
-
-      propagate;
+      return &SummonPoisonFogScroll;
    }
 
 

@@ -62,16 +62,18 @@ messages:
       return;
    }
 
-   CastSpell( who = $, iSpellPower = 0 )
+   DoSpellEffects( who = $, iSpellPower = 0 )
    "Initiation point for the spell."
    {
       local oRoom;
 
-      oRoom = Send(who,@GetOwner);
-      if Send(oRoom,@IsEnchanted,#what=self)
+      if (IsClass(who,&Room))
       {
-        Send(who,@MsgSendUser,#message_rsc=light_unnecessary);
-        return;
+         oRoom = who;
+      }
+      else
+      {
+         oRoom = Send(who,@GetOwner);
       }
 
       // global effects of the enchantment
@@ -80,7 +82,7 @@ messages:
             #time=Send(self,@GetDuration,#iSpellPower = iSpellPower));
       Send(oRoom,@AddBaseLight,#amount=(25+iSpellpower));
 
-      propagate;
+      return TRUE;
    }
 
    GetDuration(iSpellPower=0)
@@ -88,7 +90,7 @@ messages:
       local iDuration;
 
       iDuration = 45 + (iSpellPower*3);  /// 30 - 228 seconds
-      iDuration = iDuration * 1000;      /// convert to seconds            
+      iDuration = iDuration * 1000;      /// convert to seconds
 
       return random(iDuration/2,iDuration);
    }
@@ -120,6 +122,10 @@ messages:
       return;
    }
 
-end
+   GetScrollClass()
+   {
+      return &LightScroll;
+   }
 
+end
 ////////////////////////////////////////////////////////////////////////////////

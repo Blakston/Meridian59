@@ -41,8 +41,6 @@ resources:
    room_move_req_no = "You're unable to change rooms."
 
    room_no_attack = "You can't fight here."
-   room_no_harmful = \
-      "You cannot cast harmful spells here when someone else is present."
    room_no_pk_allowed = "You cannot attack another player here."
    room_guild_combat = "Only those in guilds may attack each other here."
    room_no_mob_attack = "You cannot attack monsters here."
@@ -74,6 +72,7 @@ resources:
    background_night_sky = 2skyd.bgf
 
    // Unlike the rest of these, this is actually a stormy sky.
+   // Missing a matching .bsf file so not in use, sadly.
    background_stormy_sky = 3sky.bgf
 
    creaky_door_sound = doropen1.ogg
@@ -158,7 +157,9 @@ resources:
    room_forest_sound = ambcntry.ogg
    room_necro_sound = necloop2.ogg
    room_beach_sound = ocean.ogg
-
+   
+   room_birdchirping_sound = birdchirping.ogg
+   
    room_rain_sound = rain.ogg
 
    no_use_jig = \
@@ -196,6 +197,12 @@ classvars:
 
    viWeatherZone = WEATHER_ZONE_DEFAULT
    viWeatherMask = WEATHER_MASK_DEFAULT
+
+   vbAccessibleForFollowers = TRUE
+
+   // How many fine units around a spawn must be clear to allow it?
+   // Default is 3/8th, same as block radius.
+   viSpawnRadius = 24
 
 properties:
 
@@ -261,6 +268,13 @@ properties:
    // sector ID #, animation (floor or ceiling), and height.
    plSector_changes = $
 
+   // List of all sectors that are currently in motion up/down
+   // sector ID #, animation (floor or ceiling), end-height, speed, last-update-tick, remainder
+   plSector_moves = $
+   
+   // Timer that updates moving sectors in increments
+   ptSectorUpdate = $
+   
    // List of all sectors that have flag changes. Each element in list is
    // sector ID #, depth value and scroll speed value.
    plSector_flag_changes = $
@@ -324,7 +338,17 @@ properties:
 
    // per room weather conditions
    piWeather = WEATHER_PATTERN_CLEAR
-   
+
+   // Some zones may have tighter turns and require a more narrow step size.
+   // By default, only every 2nd step will be recorded because users move in 100ms intervals.
+   piTrailSteps = 2
+
+   // Some zones may require a longer trail than others.
+   piTrailLength = 10
+
+   // Current number of active wallelements.
+   piActiveSummons = 0
+
 messages:
 
    Constructor()
@@ -356,6 +380,7 @@ messages:
       local iTerrain;
 
       Send(self,@CreateStandardObjects);
+      Send(self,@ValidateStandardObjects);
       Send(self,@CreateStandardExits);
       Send(self,@CreateYellZoneList);
       Send(self,@ComputeFarenBonus);
@@ -412,10 +437,37 @@ messages:
       propagate;
    }
 
+   ValidateStandardObjects()
+   {
+      local i, iSectorID, each_obj;
+
+      foreach i in plPassive
+      {
+         each_obj = First(i);
+         iSectorID = Send(each_obj,@GetSectorIDAtObject);
+         if (iSectorID = $
+            OR iSectorID < 0)
+         {
+            Debug(each_obj, Send(each_obj,@GetName), " is outside map in room ",
+                  vrName, Send(each_obj,@GetRow), Send(each_obj,@GetCol));
+         }
+      }
+
+      return;
+   }
+
    SomethingChanged(what = $)
    "Override from Holder, optimised for Room."
    {
       SendList(plActive,1,@SomethingChanged,#what=what);
+
+      return;
+   }
+
+   SomethingChangedFlags(what = $)
+   "Override from Holder, optimised for Room."
+   {
+      SendList(plActive,1,@SomethingChangedFlags,#what=what);
 
       return;
    }
@@ -438,6 +490,68 @@ messages:
       plBuilderGroup = $;
       Send(self,@CreateStandardExits);
       Send(self,@CreateYellZoneList);
+
+      return;
+   }
+
+   TestRoomExits()
+   {
+      local i, iRoom, oRoom, iQflags, iRflags, iHeightF, iHeightFWD, iHeightC,
+            iServerID;
+
+      iQflags = LIQ_GET_SECTORINFO;
+
+      foreach i in plEdge_exits
+      {
+         oRoom = Send(SYS,@FindRoomByNum,#num=Nth(i,2));
+         if (oRoom = $)
+         {
+            Debug("Room ",Send(self,@GetName)," has invalid room in edge exit list!");
+
+            continue;
+         }
+
+         if (GetLocationInfoBSP(Send(oRoom,@GetRoomData), iQflags,
+                  Nth(i,3),Nth(i,4),FINENESS_HALF,FINENESS_HALF,
+                  *iRflags, *iHeightF, *iHeightFWD, *iHeightC, *iServerID))
+         {
+            if (NOT (iRflags & LIR_SECTOR_INSIDE)
+               OR NOT (iRflags & LIR_SECTOR_HASFTEX))
+            {
+               Debug("Invalid edge exit going from ",Send(self,@GetName), " to ",
+                     Send(oRoom,@GetName));
+            }
+         }
+      }
+
+      foreach i in plExits
+      {
+         iRoom = Nth(i,3);
+         if (iRoom = ROOM_LOCKED_DOOR)
+         {
+            continue;
+         }
+
+         oRoom = Send(SYS,@FindRoomByNum,#num=iRoom);
+         if (oRoom = $)
+         {
+            Debug("Room ",Send(self,@GetName)," has invalid room in exit list!");
+
+            continue;
+         }
+
+         if (GetLocationInfoBSP(Send(oRoom,@GetRoomData), iQflags,
+                  Nth(i,4),Nth(i,5),FINENESS_HALF,FINENESS_HALF,
+                  *iRflags, *iHeightF, *iHeightFWD, *iHeightC, *iServerID))
+         {
+            if (NOT (iRflags & LIR_SECTOR_INSIDE)
+               OR NOT (iRflags & LIR_SECTOR_HASFTEX))
+            {
+               Debug("Invalid exit going from ",Send(self,@GetName), " to ",
+                     Send(oRoom,@GetName));
+            }
+         }
+      }
 
       return;
    }
@@ -578,7 +692,7 @@ messages:
          lTempSounds = [ room_forest_sound1, room_forest_sound2,
                          room_forest_sound3, room_forest_sound4,
                          room_forest_sound5, room_forest_sound6,
-                         room_forest_sound7
+                         room_forest_sound7, room_birdchirping_sound
                        ];
 
          foreach rSound in lTempSounds
@@ -600,10 +714,9 @@ messages:
          }
       }
 
-      piPeriodic_sounds = Bound(piPeriodic_sounds,2000,20000);
-
       return;
    }
+
 
    PeriodicSoundTimer()
    {
@@ -797,12 +910,7 @@ messages:
       return Send(self,@CheckRoomFlag,#flag=ROOM_HOMETOWN);
    }
 
-   IsGuestRoom()
-   {
-      return Send(self,@CheckRoomFlag,#flag=ROOM_GUEST_AREA);
-   }
-
-   Teleport(what=$)
+   Teleport(what = $, mob_override = FALSE)
    "Admin supported."
    "Teleports object to coordinates specified in class vars."
    {
@@ -819,7 +927,8 @@ messages:
          Send(SYS,@UtilGoNearSquare,#what=what,#where=self,
               #new_row=Send(self,@GetTeleportRow),
               #new_col=Send(self,@GetTeleportCol),
-              #new_angle=Send(self,@GetTeleportAngle));
+              #new_angle=Send(self,@GetTeleportAngle),
+              #mob_override=mob_override);
 
          if IsClass(what,&Player) AND NOT IsClass(what,&DM)
          {
@@ -1077,6 +1186,12 @@ messages:
          ptNoPKTimer = $;
       }
 
+      if ptSectorUpdate <> $  
+      {
+         DeleteTimer(ptSectorUpdate);
+         ptSectorUpdate = $;
+      }
+  
       Send(SYS,@DeleteRoom,#what=self);
       Send(self,@RemoveAllEnchantments);
 
@@ -1131,6 +1246,9 @@ messages:
       piRowsHighRes = Nth(lRoom_data,4);
       piColsHighRes = Nth(lRoom_data,5);
 
+      // set depth override flags and values
+      SetRoomDepthOverrideBSP(prmRoom,viClientFlags,viOverrideDepth1,viOverrideDepth2,viOverrideDepth3);
+
       foreach lList in [plActive, plPassive]
       {
          foreach i in lList
@@ -1147,6 +1265,22 @@ messages:
                }
             }
          }
+      }
+
+      // TODO: need some way to differentiate no depth change, but for
+      // now all flag changes in this list are depth changes.
+      foreach i in plSector_flag_changes
+      {
+         // Add depth changes.
+         Send(self,@ChangeSectorFlag,#id=First(i),#depth=Nth(i,2));
+      }
+
+      // Add in any changed sectors with speed 0.
+      // Handles stuff like Duke's feast hall door.
+      foreach i in plSector_changes
+      {
+         Send(self,@SetSector,#sector=First(i),#animation=Nth(i,2),
+               #height=Nth(i,3),#speed=0);
       }
 
       return;
@@ -1205,7 +1339,7 @@ messages:
    SafePlayerAttack()
    // Should be called GetCanAttackPlayers
    "Used to determine whether or not a player can attack another player"
-   "Without restrictions or repercussions.  Default is True.  May be"
+   "Without restrictions or repercussions.  Default is TRUE.  May be"
    "set to true in areas like arenas or hunting zones."
    {
       return Send(self,@CheckRoomFlag,#flag=ROOM_SAFE_DEATH);
@@ -1311,7 +1445,7 @@ messages:
 
       foreach i in plActive
       {
-         each_obj = Send(self,@HolderExtractObject,#data=i);
+         each_obj = First(i);
          if IsClass(each_obj, class)
          {
             if (NOT mastered) OR Send(each_obj,@GetMaster) <> $
@@ -1371,7 +1505,15 @@ messages:
          // Anything else is legal in the Arena.
          return TRUE;
       }
-      
+
+      // Allow 0 damage snowballs to work.
+      if (use_weapon <> $
+         AND IsClass(use_weapon,&Snowball)
+         AND NOT Send(use_weapon,@CanDoDamage))
+      {
+         return TRUE;
+      }
+
       if (piRoom_flags & ROOM_NO_MOB_COMBAT)
          AND (IsClass(what,&Monster)
          OR IsClass(victim,&Monster))
@@ -2030,7 +2172,7 @@ messages:
          return;
       }
 
-      if merge AND isClass(what,&NumberItem)
+      if merge AND Send(what,@IsStackable)
       {
          foreach i in plPassive
          {
@@ -2055,6 +2197,9 @@ messages:
       {
          session = Send(what,@GetSession);
 
+         // Reset our user trail.
+         Send(what,@SetUserTrail);
+
          Send(Send(SYS, @GetStatistics), @PlayerEnteredRoom,
               #oRoom = self, #who = what);
       }
@@ -2069,16 +2214,21 @@ messages:
    {
       local iTimeLeft, i, each_obj;
 
-      // The object still thinks it's with it's old owner.  If it's an item from
-      //   a player, then make sure the items don't disappear immediately.
-      if IsClass(what,&Item)
+      if (ptDispose = $)
+      {
+         // Create a dispose timer if we don't have one already.
+         ptDispose = CreateTimer(self,@DisposeTimer,piDispose_delay);
+      }
+      else if IsClass(what,&Item)
          AND Send(what,@GetOwner) <> $
          AND IsClass(Send(what,@GetOwner),&Player)
       {
+         // The object still thinks it's with it's old owner.  If it's an item
+         // from a player, then make sure the items don't disappear immediately.
          // Check the time currently left on the dipose timer.  Reset the timer
-         //  to a minute if we have less than a minute left.  This should cut
-         //  down on cases of someone dropping an object and it being cleaned up
-         //  immediately afterwards.
+         // to a minute if we have less than a minute left.  This should cut
+         // down on cases of someone dropping an object and it being cleaned up
+         // immediately afterwards.
          iTimeLeft = GetTimeRemaining(ptDispose);
          if iTimeLeft < 60000
          {
@@ -2112,6 +2262,10 @@ messages:
             }
          }
 
+         // Inform node attack that a user entered a screen, as rooms don't
+         // have any reference to whether a node attack is happening or not.
+         Send(Send(SYS,@GetNodeAttack),@UserEntered,#who=what,#where=self);
+
          if NOT pbUser_in_room
          {
             Send(self,@FirstUserEntered,#what=what,#new_row=Nth(new_pos,2),
@@ -2134,6 +2288,18 @@ messages:
          }
       }
 
+      return;
+   }
+
+   DMBlankToPlain(what=$)
+   "Called on a room if a DM goes from blank to plain."
+   {
+      return;
+   }
+
+   DMPlainToBlank(what=$)
+   "Called on a room if a DM goes from plain to blank."
+   {
       return;
    }
 
@@ -2186,14 +2352,28 @@ messages:
    SendSectorChanges(who = $)
    "Called by user when gets into new room"
    {
-      local i;
-
-      // it's a user, so send sector changes (with infinite speed)
+      local i, lMovedSector, iAnim, iSector;
 
       foreach i in plSector_changes
       {
-         Send(who,@SectorSendUser,#sector=First(i),#animation=Nth(i,2),
-              #height=Nth(i,3),#speed=0);
+         iSector = First(i);
+         lMovedSector = GetListNode(plSector_moves,1,iSector);
+         if (lMovedSector <> $)
+         {
+            iAnim = Nth(lMovedSector,2);
+            // Set initial height.
+            Send(who,@SectorSendUser,#sector=iSector,#animation=iAnim,
+                  #height=GetSectorHeightBSP(prmRoom,iSector,iAnim),#speed=0);
+            // Set moving.
+            Send(who,@SectorSendUser,#sector=iSector,#animation=iAnim,
+                  #height=Nth(lMovedSector,3),#speed=Nth(lMovedSector,4));
+         }
+         else
+         {
+            // Not moving, infinite speed.
+            Send(who,@SectorSendUser,#sector=iSector,#animation=Nth(i,2),
+                  #height=Nth(i,3),#speed=0);
+         }
       }
 
       return;
@@ -2264,11 +2444,8 @@ messages:
 
    SendExtraRoomInfo()
    {
-      AddPacket(4,Send(self,@GetWadingSound));
-      AddPacket(4,viClientFlags);
-      AddPacket(4,viOverrideDepth1);
-      AddPacket(4,viOverrideDepth2);
-      AddPacket(4,viOverrideDepth3);
+      AddPacket(4,Send(self,@GetWadingSound), 4,viClientFlags,
+                4,viOverrideDepth1, 4,viOverrideDepth2, 4,viOverrideDepth3);
 
       return;
    }
@@ -2349,6 +2526,263 @@ messages:
       return $;
    }
 
+   // This returns the difference in fine_col to move 1 step in angle's direction.
+   GetXFineStep(angle=0)
+   "Filthy beast of a function that returns the cosine values based on angle."
+   {
+      // Cosine values are returned in FINENESS (-64 to +64) while angles are entered
+      // as values between 0 and 4096.
+      // We want every sector to be centered around its corresponding cosine value.
+      // E.g. angles between 4064 and 32 should be assigned a cosine value of 64, which
+      // perfectly matches an angle of 4096 = 0.
+
+      // Let's make sure our angle stays within bounds.
+      angle = angle % MAX_ANGLE;
+
+      // Since cosine(x) = cosine(2pi-x), let's only deal with angles between 0 and 2048.
+      // Equivalent to transforming angles beyond 180° to their corresponding negative values,
+      // then treating them the same as positive angles for cosine considerations.
+      if angle > MAX_ANGLE/2
+      {
+         angle = MAX_ANGLE - angle;
+      }
+
+      // Now let's center the angle between sectors. We want an angle of 33 to land
+      // in the second sector, so we'll give it a little push.
+      angle += MAX_ANGLE/128;
+
+      if (angle < MAX_ANGLE/4)
+      {
+         if angle < MAX_ANGLE/8
+         {
+            if angle < MAX_ANGLE/16
+            {
+               if angle < MAX_ANGLE/32
+               {
+                  if angle < MAX_ANGLE/64
+                  {
+                     return FINENESS;
+                  }
+                  else
+                  {
+                     return FINENESS*995/1000;
+                  }
+               }
+               else
+               {
+                  if angle < 3*MAX_ANGLE/64
+                  {
+                     return FINENESS*981/1000;
+                  }
+                  else
+                  {
+                     return FINENESS*957/1000;
+                  }
+               }
+            }
+            else
+            {
+               if angle < 3*MAX_ANGLE/32
+               {
+                  if angle < 5*MAX_ANGLE/64
+                  {
+                     return FINENESS*924/1000;
+                  }
+                  else
+                  {
+                     return FINENESS*882/1000;
+                  }
+               }
+               else
+               {
+                  if angle < 7*MAX_ANGLE/64
+                  {
+                     return FINENESS*831/1000;
+                  }
+                  else
+                  {
+                     return FINENESS*773/1000;
+                  }
+               }
+            }
+         }
+         else
+         {
+            if angle < 3*MAX_ANGLE/16
+            {
+               if angle < 5*MAX_ANGLE/32
+               {
+                  if angle < 9*MAX_ANGLE/64
+                  {
+                     return FINENESS*707/1000;
+                  }
+                  else
+                  {
+                     return FINENESS*634/1000;
+                  }
+               }
+               else
+               {
+                  if angle < 11*MAX_ANGLE/64
+                  {
+                     return FINENESS*556/1000;
+                  }
+                  else
+                  {
+                     return FINENESS*471/1000;
+                  }
+               }
+            }
+            else
+            {
+               if angle < 7*MAX_ANGLE/32
+               {
+                  if angle < 13*MAX_ANGLE/64
+                  {
+                     return FINENESS*383/1000;
+                  }
+                  else
+                  {
+                     return FINENESS*290/1000;
+                  }
+               }
+               else
+               {
+                  if angle < 15*MAX_ANGLE/64
+                  {
+                     return FINENESS*195/1000;
+                  }
+                  else
+                  {
+                     return FINENESS*98/1000;
+                  }
+               }
+            }
+         }
+      }
+      else if angle < MAX_ANGLE/2
+      {
+         if angle < 3*MAX_ANGLE/8
+         {
+            if angle < 5*MAX_ANGLE/16
+            {
+               if angle < 9*MAX_ANGLE/32
+               {
+                  if angle < 17*MAX_ANGLE/64
+                  {
+                     return 0;
+                  }
+                  else
+                  {
+                     return -FINENESS*98/1000;
+                  }
+               }
+               else
+               {
+                  if angle < 19*MAX_ANGLE/64
+                  {
+                     return -FINENESS*195/1000;
+                  }
+                  else
+                  {
+                     return -FINENESS*290/1000;
+                  }
+               }
+            }
+            else
+            {
+               if angle < 11*MAX_ANGLE/32
+               {
+                  if angle < 21*MAX_ANGLE/64
+                  {
+                     return -FINENESS*383/1000;
+                  }
+                  else
+                  {
+                     return -FINENESS*471/1000;
+                  }
+               }
+               else
+               {
+                  if angle < 23*MAX_ANGLE/64
+                  {
+                     return -FINENESS*556/1000;
+                  }
+                  else
+                  {
+                     return -FINENESS*634/1000;
+                  }
+               }
+            }
+         }
+         else
+         {
+            if angle < 7*MAX_ANGLE/16
+            {
+               if angle < 13*MAX_ANGLE/32
+               {
+                  if angle < 25*MAX_ANGLE/64
+                  {
+                     return -FINENESS*707/1000;
+                  }
+                  else
+                  {
+                     return -FINENESS*773/1000;
+                  }
+               }
+               else
+               {
+                  if angle < 27*MAX_ANGLE/64
+                  {
+                     return -FINENESS*831/1000;
+                  }
+                  else
+                  {
+                     return -FINENESS*882/1000;
+                  }
+               }
+            }
+            else
+            {
+               if angle < 15*MAX_ANGLE/32
+               {
+                  if angle < 29*MAX_ANGLE/64
+                  {
+                     return -FINENESS*924/1000;
+                  }
+                  else
+                  {
+                     return -FINENESS*957/1000;
+                  }
+               }
+               else
+               {
+                  if angle < 31*MAX_ANGLE/64
+                  {
+                     return -FINENESS*981/1000;
+                  }
+                  else
+                  {
+                     return -FINENESS*995/1000;
+                  }
+               }
+            }
+         }
+      }
+      else
+      {
+         return -FINENESS;
+      }
+
+      return;
+   }
+
+   // This returns the difference in fine_row to move 1 step in angle's direction.
+   GetYFineStep(angle=0)
+   {
+      return Send(self,@GetXFineStep,#angle=angle+3*MAX_ANGLE/4);
+   }
+
    ReqSomethingUse(what = $, use_item = $)
    {
       propagate;
@@ -2365,7 +2799,7 @@ messages:
    "<server_validate> is set to false for user moves, which have already been "
    "checked by client (HAHA!)."
    {
-      local i, each_obj, iRow, iCol, iFineRow, iFineCol, iLOS, bMoveOffBSP;
+      local i, each_obj, iRow, iCol, iFineRow, iFineCol, iHeight, iSpeed, iLOS, iFlags;
 
       if new_row > piRows OR new_row < 1 OR new_col > piCols OR new_col < 1
       {
@@ -2403,6 +2837,22 @@ messages:
          if iFineCol = 0
          {
             iFineCol = Send(what,@GetFineCol);
+         }
+
+         // WORKAROUND/TODO: existing monsters don't have a height yet
+         if IsClass(what, &NoMoveOn) { Send(what, @InitHeight); }
+ 
+         // get height of object to move
+         iHeight = Send(what,@GetHeight);
+
+         // for battler get speed, otherwise use a default
+         if IsClass(what, &Battler)
+         {
+            iSpeed = Send(what,@GetSpeed);
+         }
+         else
+         {
+            iSpeed = SPEED_MAXIMUM;
          }
       }
       else
@@ -2442,20 +2892,23 @@ messages:
             iRow = -10;
             iCol = -10;
          }
+
+         iHeight = 0;
+         iSpeed = SPEED_MAXIMUM;
       }
 
       if server_validate
       {
-         bMoveOffBSP = FALSE;
+         iFlags = CANMOVE_NO_FLAG;
 
          if (IsClass(what,&Monster)
             AND (Send(what,@GetBehavior) & AI_MOVE_WALKTHROUGH_WALLS))
          {
-            bMoveOffBSP = TRUE;
+            iFlags |= CANMOVE_MOVE_OUTSIDE_BSP;
          }
 
-         if NOT CanMoveInRoomBSP(prmRoom,iRow,iCol,iFineRow,iFineCol,new_row,
-                     new_col,new_finerow,new_finecol,what,bMoveOffBSP)
+         if NOT CanMoveInRoomBSP(prmRoom,iRow,iCol,iFineRow,iFineCol,iHeight,new_row,
+                     new_col,new_finerow,new_finecol,iSpeed,what,iFlags)
          {
             return FALSE;
          }
@@ -2510,31 +2963,64 @@ messages:
    LineOfSight(obj1 = $, obj2 = $)
    "Returns TRUE if there is a line of sight between obj1 and obj2"
    {
-      local start_row, start_col, start_finerow, start_finecol,
-            end_row, end_col, end_finerow, end_finecol, los;
+      local start_row, start_col, start_finerow, start_finecol, start_height,
+            end_row, end_col, end_finerow, end_finecol, end_height, los;
+
+      // WORKAROUND/TODO: existing monsters don't have a height yet
+      if IsClass(obj1, &NoMoveOn) { Send(obj1, @InitHeight); }
 
       // get coordinates of source (obj1) and target (obj2)
       start_row = Send(obj1, @GetRow);
       start_col = Send(obj1, @GetCol);
       start_finerow = Send(obj1, @GetFineRow);
       start_finecol = Send(obj1, @GetFineCol);
+      start_height = Send(obj1, @GetHeight);
+
+      // modify startheight
+      if Send(obj1, @GetObjectFlags) & OF_HANGING
+      {
+         start_height -= LOS_DEFAULT_ZOFFSET;
+      }
+      else
+      {
+         start_height += LOS_DEFAULT_ZOFFSET;
+      }
+
+      // WORKAROUND/TODO: existing monsters don't have a height yet
+      if IsClass(obj2, &NoMoveOn) { Send(obj2, @InitHeight); }
+
       end_row = Send(obj2, @GetRow);
       end_col = Send(obj2, @GetCol);
       end_finerow = Send(obj2, @GetFineRow);
       end_finecol = Send(obj2, @GetFineCol);
+      end_height = Send(obj2, @GetHeight);
+
+      // modify endheight
+      if Send(obj2, @GetObjectFlags) & OF_HANGING
+      {
+         end_height -= LOS_DEFAULT_ZOFFSET;
+      }
+      else
+      {
+         end_height += LOS_DEFAULT_ZOFFSET;
+      }
 
       // call BSP LoS in C code  
       return LineOfSightBSP(prmRoom,
-         start_row, start_col, start_finerow, start_finecol,
-         end_row, end_col, end_finerow, end_finecol);
+         start_row, start_col, start_finerow, start_finecol, start_height,
+         end_row, end_col, end_finerow, end_finecol, end_height);
    }
 
+   // non_monsters_only param used to avoid sending monster move info to
+   // other monsters. This behavior might not be wanted if we want mobs to
+   // respond to other mob movements, but leaving it in for now.
    SomethingMoved(what = $, new_row = $, new_col = $, fine_row = FINENESS/2,
                   fine_col = FINENESS/2, cause = CAUSE_UNKNOWN, speed = 0,
                   non_monsters_only = FALSE)
    {
-      local i, temp, each_obj, packet_built, lNode, iQflags, 
-            iRflags, iHeightF, iHeightFWD, iHeightC, iServerID;
+      local i, temp, each_obj, packet_built, lNode, iQflags, bStealth,
+            iRflags, iHeightF, iHeightFWD, iHeightC, iServerID,
+            old_row, old_col, old_finerow, old_finecol;
 
       if new_row = $ OR new_col = $ OR fine_row = $ OR fine_col = $
       {
@@ -2601,6 +3087,10 @@ messages:
 
       if lNode <> $
       {
+         old_row = Nth(lNode,3);
+         old_col = Nth(lNode,4);
+         old_finerow = Nth(lNode,5);
+         old_finecol = Nth(lNode,6);
          SetNth(lNode,3,new_row);
          SetNth(lNode,4,new_col);
          SetNth(lNode,5,fine_row);
@@ -2619,6 +3109,9 @@ messages:
       // 2. Get this first user to build up the packet to send
       // 3. Go through all the users and SendCopyPacket 'em
 
+      // But don't send info about hidden DMs.
+      bStealth = (IsClass(what,&DM) AND Send(what,@IsDMStealthed));
+
       packet_built = FALSE;
 
       temp = plActive;
@@ -2629,7 +3122,7 @@ messages:
          each_obj = First(i);
          if IsClass(each_obj,&User)
          {
-            if not packet_built
+            if NOT packet_built
             {
                Send(each_obj,@BuildPacketSomethingMoved,#what=what,
                     #new_row=new_row,#new_col=new_col,
@@ -2650,7 +3143,7 @@ messages:
                     #fine_row=fine_row,#fine_col=fine_col,
                     #cause=cause,#speed=speed);
             }
-            else
+            else if (NOT bStealth)
             {
                // This will be a user's session
                SendCopyPacket(Nth(i,7));
@@ -2661,17 +3154,18 @@ messages:
          {
             if what = each_obj
                OR NOT non_monsters_only
-               OR NOT IsClass(each_obj,&Monster)
+               OR NOT (IsClass(each_obj,&Monster) AND NOT IsClass(each_obj,&Brambles))
             {
                if packet_built
                {
                   ClearPacket();
                   packet_built = FALSE;
                }
-               Send(each_obj,@SomethingMoved,#what=what,
-                    #new_row=new_row,#new_col=new_col,
-                    #fine_row=fine_row,#fine_col=fine_col,
-                    #cause=cause,#speed=speed);
+               Send(each_obj,@SomethingMoved,#what=what,#new_row=new_row,
+                     #new_col=new_col,#fine_row=fine_row,#fine_col=fine_col,
+                     #cause=cause,#speed=speed,#old_row=old_row,
+                     #old_col=old_col,#old_finerow=old_finerow,
+                     #old_finecol=old_finecol);
             }
          }
 
@@ -2681,14 +3175,20 @@ messages:
       ClearPacket();
 
       // Radius enchants, because SomethingMoved not always sent to players.
-      SendListByClass(plActive,1,&NoMoveOn,@NoMoveOnRadiusEnchCheckOne,#who=what);
+      // Object must still have us as the owner, as they may have died due
+      // to the result of one of the SomethingMoved calls (e.g. firewall).
+      if (Send(what,@GetOwner) = self)
+      {
+         SendListByClass(plActive,1,&NoMoveOn,@NoMoveOnRadiusEnchCheckOne,
+               #who=what);
+      }
 
       return;
    }
 
    SomethingTurned(what = $,new_angle = $,cause = CAUSE_UNKNOWN)
    {
-      local i, lNode, each_obj, packet_built, temp;
+      local i, lNode, each_obj, packet_built, temp, bStealth;
 
       // Gets the list node containing what as first element.
       lNode = GetListNode(plActive,1,what);
@@ -2719,6 +3219,9 @@ messages:
       // 2. Get this first user to build up the packet to send
       // 3. Go through all the users and SendCopyPacket 'em
 
+      // But don't send info about hidden DMs.
+      bStealth = (IsClass(what,&DM) AND Send(what,@IsDMStealthed));
+
       packet_built = FALSE;
 
       temp = plActive;
@@ -2737,7 +3240,10 @@ messages:
                packet_built = TRUE;
             }
 
-            if each_obj <> what OR cause <> CAUSE_USER_INPUT
+            if ((each_obj <> what
+                  AND NOT bStealth)
+               OR (cause <> CAUSE_USER_INPUT
+                  AND each_obj = what))
             {
                // Seventh element will be a user's session
                SendCopyPacket(Nth(i,7));
@@ -2768,7 +3274,7 @@ messages:
       return;
    }
 
-   SomethingPhasedIn(what=$)
+   SomethingPhasedIn(what=$,bTeleport=FALSE)
    "Faster override for Room, don't need to propagate to Holder."
    {
       local i;
@@ -2778,7 +3284,14 @@ messages:
          return;
       }
 
-      SendList(plActive,1,@SomethingPhasedIn,#what=what);
+      SendList(plActive,1,@SomethingPhasedIn,#what=what,#bTeleport=bTeleport);
+
+      // Don't put room enchantments on if teleporting, since the teleport
+      // happens after phase is fully removed.
+      if (bTeleport)
+      {
+         return;
+      }
 
       // Add room enchantment effects.
       foreach i in plEnchantments
@@ -2861,6 +3374,28 @@ messages:
       }
 
       propagate;
+   }
+
+   IsAnyUserInSectorID(iNum=0)
+   "Returns TRUE if any user is present in the sector ID given.  Does not "
+   "count invisible DMs."
+   {
+      local i, each_obj;
+
+      foreach i in plActive
+      {
+         each_obj = First(i);
+
+         if (IsClass(each_obj,&User)
+            AND NOT (IsClass(each_obj,&DM)
+               AND Send(each_obj,@IsDMStealthed))
+            AND Send(each_obj,@GetSectorIDAtObject) = iNum)
+         {
+            return TRUE;
+         }
+      }
+
+      return FALSE;
    }
 
    IsUserInArea(who=$,iRow=$,iCol=$,iFineRow=$,iFineCol=$,lArea=$)
@@ -2961,25 +3496,80 @@ messages:
    }
 
    SetSector(sector=$,animation=$,height=$,speed=$)
-   "Call this to change the height of a sector (affects clients only, not "
-   "move grid)."
+   "Call this to change the height of a sector."
    {
-      local i,each_obj;
+      local i,found,each_obj;
 
-      // Update BSP room data
-      MoveSectorBSP(prmRoom, sector, animation, height, speed);
+      // for speed = 0 the move should be instant
+      if speed <= 0
+      {
+         //Debug("Setting new instant height ",height," of sector ",sector);
 
-      // Tell everyone in the room at the moment about the change
+         // hence update BSP room data instantly to end height
+         MoveSectorBSP(prmRoom, sector, animation, height, speed);
 
+         // and see if we got this sector moving somehow
+         foreach i in plSector_moves
+         {
+            // if so delete the move since it's outdated
+            if First(i) = sector AND Nth(i,2) = animation
+            {
+               plSector_moves = DelListElem(plSector_moves, i);
+            }
+         }
+      }
+
+      // otherwise the move will be done over time by increments
+      else
+      {
+         //Debug("Created incremented move for sector ",sector,animation," with h:",height," v:",speed);
+         found = FALSE;
+
+         // hence see if we got this sector moving already
+         foreach i in plSector_moves
+         {
+            // match on existing moving sector, update it
+            if First(i) = sector AND Nth(i,2) = animation
+            {
+               found = TRUE;
+               SetNth(i,3,height); // set new endheight
+               SetNth(i,4,speed);  // set new speed
+            }
+         }
+
+         // not in list, create a new sectormove over time
+         if NOT found
+         {
+            plSector_moves = Cons([ sector, animation, height, speed, GetTickCount(), 0 ],plSector_moves);
+         }
+
+         // init (or continue) sector move increments by timer
+         // this will repeat itself until all moves are done
+         Send(self, @UpdateSectorHeightTimer);
+      }
+     
+      // now deal with objects/users
+      // tell everyone in the room at the moment about the change
+      // we'll tell them the endheight and speed, not increments!
       foreach i in plActive
       {
          each_obj = First(i);
+
+         // tell user (objects will ignore this)
          Send(each_obj,@SectorSendUser,#animation=animation,#sector=sector,
               #height=height,#speed=speed);
+
+         // if the move was instant, update heights of all 
+         // objects that are actually on that sector also instantly
+         // otherwise their heights will be adjusted in timer function
+         if speed <= 0 AND Send(each_obj, @GetSectorID) = sector
+         {
+            //Debug("Updating height of ",Send(each_obj,@GetTrueName)," on moving sector ",sector," instantly");
+            Send(each_obj, @UpdateHeight);
+         }
       }
 
       // And store so that new people in room will get the change
-
       foreach i in plSector_changes
       {
          if First(i) = sector AND Nth(i,2) = animation
@@ -2996,6 +3586,125 @@ messages:
       return;
    }
 
+   UpdateSectorHeightTimer(timer = $)
+   "Increments all moving sectors further towards their end height"
+   {
+      local i, k, each_obj, sector, animation, current_height, end_height, 
+            speed, last_tick, current_tick, tick_delta, height_delta,
+            all_done, remainder;
+
+      // controls recreation of timer at the end
+      all_done = TRUE;
+
+      // delete a possible existing timer
+      if ptSectorUpdate <> $ AND ptSectorUpdate <> timer 
+      {
+         DeleteTimer(ptSectorUpdate); 
+      }
+
+      // unset timer
+      ptSectorUpdate = $;
+
+      // loop all currently moving sectors
+      foreach i in plSector_moves
+      {
+         // get list entry values
+         sector         = First(i);
+         animation      = Nth(i,2);
+         end_height     = Nth(i,3);
+         speed          = Nth(i,4);
+         last_tick      = Nth(i,5);
+         remainder      = Nth(i,6);
+         current_height = GetSectorHeightBSP(prmRoom, sector, animation);
+
+         // sector still moving
+         if current_height <> end_height
+         {
+            //Debug("MOVSECT",sector,"anim",animation,"from",current_height,"to",
+            //      end_height,"speed",speed,"room",Send(self, @GetTrueName));
+
+            // get current tick and tickdelta   
+            current_tick = GetTickCount();
+            tick_delta   = Bound(current_tick - last_tick, 0, 1000);
+
+            // calculate height delta
+            // note: sectorspeed has different unit than object speed
+            // it's also defined per 10s, but neither big units nor fine units
+            // also we need fully precision here, hence store and use the remainder
+            height_delta = (tick_delta * (speed*16)) + remainder;
+            remainder    = height_delta % 10000;
+            height_delta = height_delta / 10000;
+
+            // moving up
+            if end_height > current_height
+            {
+               current_height += height_delta;
+               if (current_height >= end_height) 
+               { 
+                  current_height = end_height; 
+                  all_done = FALSE; //must run at least once more 
+               }
+            }
+
+            // moving down
+            else if end_height < current_height
+            {
+               current_height -= height_delta;
+               if (current_height <= end_height) 
+               { 
+                  current_height = end_height; 
+                  all_done = FALSE; //must run at least once more 
+               }
+            }
+
+            // Update BSP room data
+            MoveSectorBSP(prmRoom, sector, animation, current_height, speed);
+
+            // update height of objects on that sector
+            // note: this requires updated BSP data!
+            foreach k in plActive
+            {
+               each_obj = First(k);
+
+               // check if that obj is actually on that sector
+               // if so make it update its height
+               if Send(each_obj, @GetSectorID) = sector
+               {
+                  /*Debug("Updating height of ",Send(each_obj,@GetTrueName),
+                        "on moving sector ",sector," incrementally");*/
+
+                  Send(each_obj, @UpdateHeight);
+               }
+            }
+
+            // still not finished
+            if end_height <> current_height 
+            { 
+               all_done = FALSE; 
+            }
+
+            // save back lasttick and remainder
+            SetNth(i,5,current_tick);
+            SetNth(i,6,remainder);
+         }
+
+         // this move is done, remove it from list
+         else
+         {
+            //Debug("Finished moving sector",sector);
+            plSector_moves = DelListElem(plSector_moves, i);
+         }
+      }
+
+      // recreate timer if not all moves are finished     
+      if NOT all_done
+      {
+         ptSectorUpdate = CreateTimer(self,@UpdateSectorHeightTimer,100);
+      }
+
+      return;
+   }
+   
    SetSectorFlags(sector=$,depth=0,scrollSpeed=0)
    "Call this to change the depth and scroll speed of a sector."
    {
@@ -3006,8 +3715,24 @@ messages:
          return;
       }
 
-      // Tell everyone in the room at the moment about the change
+      // Adjust depth server-side too.
+      switch(depth)
+      {
+      case SF_DEPTH0:
+         ChangeSectorFlagBSP(prmRoom, sector, CSF_DEPTH0);
+         break;
+      case SF_DEPTH1:
+         ChangeSectorFlagBSP(prmRoom, sector, CSF_DEPTH1);
+         break;
+      case SF_DEPTH2:
+         ChangeSectorFlagBSP(prmRoom, sector, CSF_DEPTH2);
+         break;
+      case SF_DEPTH3:
+         ChangeSectorFlagBSP(prmRoom, sector, CSF_DEPTH3);
+         break;
+      }
 
+      // Tell everyone in the room at the moment about the change
       foreach i in plActive
       {
          each_obj = First(i);
@@ -3017,6 +3742,12 @@ messages:
          {
             Post(each_obj,@ToCliPlayer);
             Post(each_obj,@ToCliRoomContents);
+         }
+
+         // Possible height (depth) change.
+         if (Send(each_obj,@GetSectorID) = sector)
+         {
+            Send(each_obj,@UpdateHeight);
          }
       }
 
@@ -3049,6 +3780,10 @@ messages:
          return;
       }
 
+      // TODO: need a way to differentiate plSector_flag_changes list entries
+      // with no depth change. Currently none in use.
+      ChangeSectorFlagBSP(prmRoom, id, CSF_DEPTH_RESET);
+
       foreach i in plSector_flag_changes
       {
          if (id <> $ AND First(i) = id)
@@ -3064,6 +3799,11 @@ messages:
          {
             Send(each_obj,@ToCliPlayer);
             Send(each_obj,@ToCliRoomContents);
+         }
+         // Possible height (depth) change.
+         if (Send(each_obj,@GetSectorID) = id)
+         {
+            Send(each_obj,@UpdateHeight);
          }
       }
 
@@ -3215,6 +3955,81 @@ messages:
 
       // not already in list, so add
       plTexture_changes = Cons([ id, new_texture, flags ], plTexture_changes);
+
+      return;
+   }
+
+   ChangeSectorFlag(id = $, depth = $, nomove = $, flags = $)
+   "depth can be SF_DEPTH0, SF_DEPTH1, SF_DEPTH2, SF_DEPTH3."
+   "nomove can be TRUE (turn nomove on) or FALSE (turn nomove off)."
+   "flags can be any valid value (see blakston.khd) but the intended usage "
+   "is to send a reset for either depth, nomove or both."
+   {
+      local i, each_obj, iCSFlag;
+
+      if (id = $
+         OR prmRoom = $)
+      {
+         Debug("ChangeSectorFlag called with $ data ",id, prmRoom);
+
+         return;
+      }
+
+      // 0 is empty.
+      iCSFlag = 0;
+
+      // Option to send flags directly
+      if (flags <> $)
+      {
+         ChangeSectorFlagBSP(prmRoom, id, flags);
+      }
+      else
+      {
+         // Construct flags.
+         switch(depth)
+         {
+         case SF_DEPTH0:
+            iCSFlag |= CSF_DEPTH0;
+            break;
+         case SF_DEPTH1:
+            iCSFlag |= CSF_DEPTH1;
+            break;
+         case SF_DEPTH2:
+            iCSFlag |= CSF_DEPTH2;
+            break;
+         case SF_DEPTH3:
+            iCSFlag |= CSF_DEPTH3;
+            break;
+         }
+         switch(nomove)
+         {
+         case TRUE:
+            iCSFlag |= CSF_NOMOVE_ON;
+            break;
+         case FALSE:
+            iCSFlag |= CSF_NOMOVE_OFF;
+            break;
+         }
+
+         if (iCSFlag > 0)
+         {
+            ChangeSectorFlagBSP(prmRoom, id, iCSFlag);
+         }
+      }
+
+      // Possible height (depth) change.
+      if (flags <> $
+         OR iCSFlag > 0)
+      {
+         foreach i in plActive
+         {
+            each_obj = First(i);
+            if (Send(each_obj,@GetSectorID) = id)
+            {
+               Send(each_obj,@UpdateHeight);
+            }
+         }
+      }
 
       return;
    }
@@ -3456,6 +4271,16 @@ messages:
    SomethingWaveRoom(what = 0,wave_rsc = $)
    "Don't send <what> if not from any particular object"
    {
+      // Don't play sounds made by stealthed DMs.
+      // Handled here because a lot of things might accidentally cause
+      // stealthed DMs to give themselves away by sound.
+      if (what <> 0
+         AND IsClass(what,&DM)
+         AND Send(what,@IsDMStealthed))
+      {
+         return;
+      }
+
       SendListByClass(plActive,1,&User,@WaveSendUser,
             #wave_rsc=wave_rsc,#source_obj=what);
 
@@ -3816,6 +4641,14 @@ messages:
          Send(each_obj,@DestroyDisposable);
       }
 
+      // Don't need a dispose timer if nothing to dispose.
+      if (NOT pbUser_in_room
+         AND ptDispose <> $)
+      {
+         DeleteTimer(ptDispose);
+         ptDispose = $;
+      }
+
       return;
    }
 
@@ -4065,7 +4898,6 @@ messages:
       {
          Send(self,@SetRoomFlag,#flag=ROOM_SNOWING,#value=FALSE);
          Send(self,@WeatherChanged);
-
       }
 
       if pbSnowGroundTexture
@@ -4238,6 +5070,7 @@ messages:
    }
 
    #region Arena Functions
+   
    IsArena()
    {
       return FALSE;
@@ -4541,20 +5374,8 @@ messages:
          if Send(each_obj,@IsIllusion)
             AND Random(1,100) <= iChance
          {
-            if IsClass(each_obj,&PassiveWallofFire)
-            {
-               oTarget = Send(each_obj,@GetCaster);
-               if Send(who,@AllowBattlerAttack,#victim=oTarget,
-                        #stroke_obj=stroke_obj)
-               {
-                  Send(each_obj,@Delete);
-               }
-            }
-            else
-            {
-               // Delete any unhandled illusions without a safety check
-               Send(each_obj,@Delete);
-            }
+            // Delete any unhandled illusions without a safety check
+            Send(each_obj,@Delete);
          }
       }
 
@@ -4622,11 +5443,6 @@ messages:
       if (iTerrain & TERRAIN_FIELDS)
       {
          return 10;
-      }
-
-      if (iTerrain & TERRAIN_DESERT)
-      {
-         return 5;
       }
 
       if (iTerrain & TERRAIN_BEACH)
@@ -4717,11 +5533,6 @@ messages:
          iBonus = iBonus +  10;
       }
 
-      if (iTerrain & TERRAIN_DESERT)
-      {
-         iBonus = iBonus +  5;
-      }
-
       if (iTerrain & TERRAIN_BEACH)
       {
          iBonus = iBonus +  5;
@@ -4756,109 +5567,84 @@ messages:
       return;
    }
 
-   FirstMove(what=$, new_row=0, new_col = 0)
+   UserMoved(what=$, new_row=0, new_col = 0)
    {
-      local i, oTarg1, oTarg2, oTarg3, oTarg4, oTarg5,
-            iHate1, iHate2, iHate3, iHate4, iHate5, oBrain,
-            iHate, oTarg, iTempHate, oTempTarg;
+      local i, oTarget, iDistance, iClosest, lClosest, iChasers, lClose;
 
-      // We used to reset monster chasers here, but monsters have better AI
-      // now and can on occasion respond before a user makes a move. Calling
-      // this now would reset chasers after a user already has one chasing him,
-      // which leads to multiple aggro without the corresponding increase in
-      // 'chaser level'.
-      //if isClass(what,&user)
-      //{
-      //   Send(what,@ResetMonsterChasers);
-      //}
+      lClose = $;
 
-      iHate1 = 0;
-      iHate2 = 0;
-      iHate3 = 0;
-      iHate4 = 0;
-      iHate5 = 0;
-
+      // Create a list of monsters who are aware of our presence.
       foreach i in plActive
       {
-         oTarg = First(i);
-         if IsClass(oTarg,&Monster)
+         oTarget = First(i);
+
+         if IsClass(oTarget,&Monster) AND (NOT Send(oTarget,@IsPacified))
          {
-            if oBrain = $
-            {
-               oBrain = Send(oTarg,@GetBrain);
-            }
+            iDistance = Send(what,@SquaredFineDistanceTo3D,#what=oTarget);
 
-            iHate = Send(oBrain,@GetHatred,#what=what,#mob=oTarg,
-                           #behavior=Send(oTarg,@GetBehavior),#event=6);
-
-            if iHate > iHate1
+            // If we are in sight, or we bump into a mob, it's a potential chaser.
+            if (iDistance < 4096)
+               OR (iDistance < Send(oTarget,@GetAggroRange,#what=what))
             {
-               iTempHate = iHate1;
-               iHate1 = iHate;
-               iHate = iTempHate;
-               oTempTarg = oTarg1;
-               oTarg1 = oTarg;
-               oTarg = oTempTarg;
-            }
-
-            if iHate > iHate2
-            {
-               iTempHate = iHate2;
-               iHate2 = iHate;
-               iHate = iTempHate;
-               oTempTarg = oTarg2;
-               oTarg2 = oTarg;
-               oTarg = oTempTarg;
-            }
-
-            if iHate > iHate3
-            {
-               iTempHate = iHate3;
-               iHate3 = iHate;
-               iHate = iTempHate;
-               oTempTarg = oTarg3;
-               oTarg3 = oTarg;
-               oTarg = oTempTarg;
-            }
-
-            if iHate > iHate4
-            {
-               iTempHate = iHate4;
-               iHate4 = iHate;
-               iHate = iTempHate;
-               oTempTarg = oTarg4;
-               oTarg4 = oTarg;
-               oTarg = oTempTarg;
-            }
-
-            if iHate > iHate5
-            {
-               iTempHate = iHate5;
-               iHate1 = iHate;
-               iHate = iTempHate;
-               oTempTarg = oTarg5;
-               oTarg5 = oTarg;
-               oTarg = oTempTarg;
+               lClose = Cons([oTarget,iDistance],lClose);
             }
          }
       }
 
-      // Okay, at this point we should know the five
-      //  monsters in the room that hate the player the
-      //  most.  sic' em.
+      if lClose = $
+      {
+         return;
+      }
 
-      Send(self,@TargetSwitchMob,#mob=oTarg1,#what=what);
-      Send(self,@TargetSwitchMob,#mob=oTarg2,#what=what);
-      Send(self,@TargetSwitchMob,#mob=oTarg3,#what=what);
-      Send(self,@TargetSwitchMob,#mob=oTarg4,#what=what);
-      Send(self,@TargetSwitchMob,#mob=oTarg5,#what=what);
+      // Filter out any mobs that don't hate us.
+      foreach i in lClose
+      {
+         oTarget = First(i);
+
+         if (Send(Send(oTarget,@GetBrain),@GetHatred,#what=what,#mob=oTarget,
+               #behavior=Send(oTarget,@GetBehavior),#event=1)) < 1
+         {
+            lClose = DelListElem(lClose,i);
+         }
+      }
+
+      if lClose = $
+      {
+         return;
+      }
+
+      // Don't allow more than the x closest mobs to aggro.
+      iChasers = Length(lClose);
+
+      // Send the chasers after the target. Closest monster got dibs.
+      while iChasers > 0
+      {
+         iClosest = MAX_KOD_INT;
+
+         foreach i in lClose
+         {
+            iDistance = Nth(i,2);
+
+            if iDistance < iClosest
+            {
+               iClosest = iDistance;
+               lClosest = i;
+            }
+         }
+
+         Send(self,@TargetSwitchMob,#mob=First(lClosest),#what=what);
+
+         lClose = DelListElem(lClose,lClosest);
+
+         --iChasers;
+      }
 
       return;
    }
 
    TargetSwitchMob(mob=$,what=$)
    {
-      local oBrain;
+      local oBrain, iDelay;
 
       if mob = $
       {
@@ -4868,17 +5654,10 @@ messages:
       oBrain = Send(mob,@GetBrain);
       if mob <> $
       {
-         if Send(oBrain,@AttemptTargetSwitch,#mob=mob,#what=what,#event=7)
+         if Send(oBrain,@AttemptTargetSwitch,#mob=mob,#what=what,#event=1)
          {
-            if Send(mob,@CanReach,#what=what)
-            {
-               Send(mob,@EnterStateAttack,#target=what,#actnow=TRUE);
-
-               return;
-            }
-
-            // If they hit us, we chase them whether we can see them or not
-            Send(mob,@EnterStateChase,#target=what,#actnow=TRUE);
+            iDelay = Bound(100 - Send(mob,@GetAgility),25,100) * 20;
+            Send(mob,@EnterStateEngage,#target=what,#actnow=FALSE,#delay=iDelay);
 
             return;
          }
@@ -5023,14 +5802,44 @@ messages:
       return;
    }
 
+   TestGenSuccess()
+   {
+      local iCount;
+
+      iCount = Send(self,@GetGenSuccessPercent);
+
+      Debug(vrName, "had a random point gen failure rate of ",
+            iCount / 100, iCount % 100,"%");
+
+      return;
+   }
+
+   GetGenSuccessPercent()
+   "Returns the % success rate of calling GetRandomPointBSP() in this room."
+   "Number returned is % * 100."
+   {
+      local i, iCount, iMRow, iMCol, iMRowFine, iMColFine;
+
+      iCount = 0;
+      for (i = 0; i < 10000; ++i)
+      {
+         if (NOT GetRandomPointBSP(prmRoom, 32, viSpawnRadius, *iMRow, *iMCol, *iMRowFine, *iMColFine))
+         {
+            ++iCount;
+         }
+      }
+
+      return iCount;
+   }
+
    GenerateMonster(oMonster=$, iRow=0, iCol=0, bStack=FALSE, bRandom=FALSE)
    "Pulled outside the function to be callable outside of the function. "
    "Can generate a monster at a specific location, or you can let it be "
    "put at a gen point.  This is now in Room, as all rooms can use it for "
    "placing either a monster or a random item."
    {
-      local oOldOwner, iMRow, iMCol, iMRowFine, iMColFine, lPos, iRoll, iCount, lPatrolPath,
-            iQflags, iRflags, iHeightF, iHeightFWD, iHeightC, iServerID, iCheck;
+      local oOldOwner, iMRow, iMCol, iMRowFine, iMColFine, lPos, iIndex, iCount, lPatrolPath,
+            iQflags, iRflags, iHeightF, iHeightFWD, iHeightC, iServerID, iCheck, iSpawnLoc;
 
       iMRow = iRow;
       iMCol = iCol;
@@ -5071,10 +5880,18 @@ messages:
             // this point is guaranteed to have the following properties:
             // (a) inside ThingsBox  (b) inside a sector with a texture set
             // (c) not blocked by another object
-            if NOT GetRandomPointBSP(prmRoom, 15, *iMRow, *iMCol, *iMRowFine, *iMColFine)
+            // (d) a step with specified length can be made in all directions 
+            if NOT GetRandomPointBSP(prmRoom, 32, viSpawnRadius, *iMRow, *iMCol, *iMRowFine, *iMColFine)
             {
                Debug("failed to place monster ",oMonster,Send(oMonster,@GetName),
                      " in room ",self,Send(self,@GetName));
+               Send(oMonster,@Delete);
+
+               return FALSE;
+            }
+            else if NOT Send(self,@IsValidSpawnLocation,#iRow=iMRow,#iCol=iMCol,
+               #iFineRow=iMRowFine,#iFineCol=iMColFine,#what=oMonster)
+            {
                Send(oMonster,@Delete);
 
                return FALSE;
@@ -5083,20 +5900,32 @@ messages:
             {
                // no need to verify these randompoints again
                iCheck = FALSE;
+
+               // Keep track of our spawn location.
+               Send(oMonster,@SetSpawnLoc,#iRow=iMRow,#iCol=iMCol);
             }
          }
          else
          {
-            iRoll = Random(1,Length(plGenerators));
-            lPos = Nth(plGenerators,iRoll);
-            iMRow = First(lPos);
-            iMCol = Nth(lPos,2);
-            
-            if (plPatrolPaths <> $)
-               AND (Length(plPatrolPaths) >= iRoll)
-               AND (Nth(plPatrolPaths,iRoll) <> $)
+            iSpawnLoc = Send(self,@FindFreeGenerator);
+            if NOT iSpawnLoc
             {
-               lPatrolPath = Nth(plPatrolPaths,iRoll);
+               Send(oMonster,@Delete);
+
+               return FALSE;
+            }
+
+            iIndex = iSpawnLoc / 1000000;
+            iMRow = (iSpawnLoc / 1000) % 1000;
+            iMCol = iSpawnLoc % 1000;
+
+            Send(oMonster,@SetSpawnLoc,#iRow=iMRow,#iCol=iMCol,#iIndex=iIndex);
+
+            if (plPatrolPaths <> $)
+               AND (Length(plPatrolPaths) >= iIndex)
+               AND (Nth(plPatrolPaths,iIndex) <> $)
+            {
+               lPatrolPath = Nth(plPatrolPaths,iIndex);
             }
          }
       }
@@ -5133,10 +5962,10 @@ messages:
          Send(self,@NewHold,#what=oMonster,#new_row=iMRow,#new_col=iMCol,
                #fine_row=iMRowFine,#fine_col=iMColFine);
 
-         if (lPatrolPath <> $)
-         {
-            Send(oMonster,@SetPatrolPath,#lPath=lPatrolPath);
-         }
+         // if (lPatrolPath <> $)
+         // {
+         //    Send(oMonster,@SetPatrolPath,#lPath=lPatrolPath);
+         // }
       }
       else
       {
@@ -5148,10 +5977,83 @@ messages:
       return TRUE;
    }
 
+   FindFreeGenerator(bRandom=TRUE)
+   {
+      local i, j, iRow, iCol, iIndex, iLength, iShift, bOccupied,
+            oMonster, iSpawnLoc;
+
+      iLength = Length(plGenerators);
+      iShift = bRandom * Random(0,iLength-1);
+
+      iIndex = 1 + iShift;
+
+      while iIndex <> iShift
+      {
+         i = Nth(plGenerators,iIndex);
+         iRow = First(i);
+         iCol = Nth(i,2);
+
+         bOccupied = FALSE;
+
+         foreach j in plActive
+         {
+            oMonster = Send(self,@HolderExtractObject,#data=j);
+            if NOT IsClass(oMonster,&Monster)
+            {
+               continue;
+            }
+
+            iSpawnLoc = Send(oMonster,@GetSpawnLoc);
+
+            if iSpawnLoc = $
+            {
+               continue;
+            }
+
+            if ((iSpawnLoc / 1000) % 1000 = iRow)
+               AND (iSpawnLoc % 1000 = iCol)
+            {
+               bOccupied = TRUE;
+               break;
+            }
+         }
+
+         if NOT bOccupied
+         {
+            return iIndex*1000000+iRow*1000+iCol;
+         }
+
+         if iIndex < iLength
+         {
+            ++iIndex;
+         }
+         else if iShift
+         {
+            iIndex = 1;
+         }
+         else
+         {
+            break;
+         }
+      }
+
+      return FALSE;
+   }
+
    TryCreateMonster()
    "Return FALSE for any non-monster generating room."
    {
       return FALSE;
+   }
+
+   GetPatrolRadius()
+   {
+      return 0;
+   }
+
+   GetLeashRadius()
+   {
+      return 0;
    }
 
    CanHavePlayerPortal()
@@ -5228,20 +6130,6 @@ messages:
          }
       }
 
-      // Separate check through plPassive for passive wall elements
-      foreach i in plPassive
-      {
-         each_obj = Send(self,@HolderExtractObject,#data=i);
-         if IsClass(each_obj,&PassiveWallofFire)
-            OR IsClass(each_obj,&PassiveWallofLightning)
-         {
-            if Send(who,@SquaredDistanceTo,#what=each_obj)
-               <= (WALL_DELETE_RADIUS * WALL_DELETE_RADIUS)
-            {
-               Post(each_obj,@Delete);
-            }
-         }
-      }
       return;
    }
 
@@ -5431,6 +6319,85 @@ messages:
    "Override which prints nothing for non-monsterrooms."
    {
       return;
+   }
+
+   IsAccessibleForFollowers()
+   {
+      return vbAccessibleForFollowers;
+   }
+
+   // Occasionally this may be called if monsters are spawned in a
+   // non monster room.
+   GetNumGenerators()
+   {
+      return 0;
+   }
+
+   // Used to exempt certain areas from random monster spawning.
+   IsValidSpawnLocation(iRow=0,iCol=0,iFineRow=0,iFineCol=0,what=$)
+   {
+      return TRUE;
+   }
+
+   GetMercenaryTriggerObject(who=$)
+   {
+      return;
+   }
+
+   GetTrailSteps()
+   {
+      return piTrailSteps;
+   }
+
+   GetTrailLength()
+   {
+      return piTrailLength;
+   }
+
+   CanDropMonsterLoot()
+   {
+      return TRUE;
+   }
+
+   ResetActiveSummons()
+   {
+      if piActiveSummons = 0
+      {
+         return FALSE;
+      }
+
+      piActiveSummons = 0;
+
+      return TRUE;
+   }
+
+   GetActiveSummons()
+   {
+      return piActiveSummons;
+   }
+
+   AddActiveSummons(i=1)
+   {
+      piActiveSummons += i;
+
+      return;
+   }
+
+   RemoveActiveSummons(i=1)
+   {
+      piActiveSummons -= i;
+
+      return;
+   }
+
+   CanSummon(bHalf=FALSE)
+   {
+      if bHalf
+      {
+         return (piActiveSummons*2 < Send(SETTINGS_OBJECT,@GetRoomSummoningLimit));
+      }
+
+      return (piActiveSummons < Send(SETTINGS_OBJECT,@GetRoomSummoningLimit));
    }
 
 end

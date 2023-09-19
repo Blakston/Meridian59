@@ -39,8 +39,6 @@ resources:
    admin_logoffghost_off_command = "logoffghost off"
    admin_logoffghost_temp_off_command = "logoffghost temp off"
 
-   admin_no_longer = "This command no longer exists; try the DM command form."
-
    // not for admin use, but to let creator work
    admin_icon_priestess = priestes.bgf 
    admin_cant_create_itematt = \
@@ -85,33 +83,6 @@ messages:
       if pbMorph
       {
          Send(self,@MsgSendUser,#message_rsc=admin_morphed);
-      }
-
-      propagate;
-   }
-
-   AllowBattlerAttack(victim=$,stroke_obj=$,use_weapon=$,report=TRUE)
-   {
-      if IsClass(victim,&Player)
-         AND Send(victim,@IsInCannotInteractMode)
-      {
-         return FALSE;
-      }
-
-      if Send(self,@PlayerIsImmortal)
-      {
-         return TRUE;
-      }
-
-      propagate;
-   }
-
-   ComputeMaxMana()
-   {
-      // Don't change the max mana if the player is immortal
-      if Send(self,@PlayerIsImmortal)
-      {
-         return;
       }
 
       propagate;
@@ -361,6 +332,35 @@ messages:
          DeleteTimer(ptTour);
          ptTour = $;
       }
+
+      return;
+   }
+
+   ToCliPlayers()
+   "Sends client a list of all users logged on, including object id, "
+   "resource id, and actual string of the resource (since it's a dynarsc)."
+   "Override since admins see everyone."
+   {
+      local i, lUsers, rName;
+
+      lUsers = Send(SYS,@GetUsersLoggedOn);
+
+      AddPacket(1,BP_PLAYERS,2,Length(lUsers));
+
+      foreach i in lUsers
+      {
+         rName = Send(i,@GetTrueName);
+
+         AddPacket(4,i, 4,rName, STRING_RESOURCE,rName,
+                   4,Send(i,@GetObjectFlags),
+                   1,Send(i,@GetDrawingEffects) & ~DRAWFX_INVISIBLE,
+                   4,0, // minimapflags, don't need the value here.
+                   4,Send(i,@GetPlayerNameColor),
+                   1,Send(i,@GetClientObjectType),
+                   1,0); // MoveOn type, don't need it here.
+      }
+
+      SendPacket(poSession);
 
       return;
    }

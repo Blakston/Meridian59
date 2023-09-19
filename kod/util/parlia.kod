@@ -109,8 +109,6 @@ properties:
 
    piTotalPowerPoints = 0
 
-   pbHiddenSwitch = FALSE
-
    // This number is the balance factor for the faction scenario.
    // This determines the percent of total points used as the "balance" point.
    // The balance point is where power and number of members equal "normal" benefits.
@@ -1078,7 +1076,7 @@ messages:
    }
 
 ////////////////////////////////////////////////////////////////////////////////
-//////	Effects Part for Faction Powers
+//////   Effects Part for Faction Powers
 ////////////////////////////////////////////////////////////////////////////////
 
    GetFactionSpellPowerBonus(who=$,theSpell=$)
@@ -1181,7 +1179,7 @@ messages:
       return (100 + iBonus);
    }
 
-  GetFactionHitrollBonus(who=$)
+  GetFactionHitrollBonus(who=$,stroke_obj=$)
   {
       local iBonus, iFaction;
 
@@ -1208,11 +1206,13 @@ messages:
       if NOT Send(who,@PlayerIsIntriguing)
       {
          return 50;
-      }			  
+      }
     
       iBonus = Send(self,@CalcFactionBonus,#base=100,#faction=iFaction);
 
-      if Random(0,100) = 0 AND iFaction <> FACTION_NEUTRAL
+      if stroke_obj <> $
+         AND iFaction <> FACTION_NEUTRAL
+         AND Random(0,100) = 0
       {
          if iBonus <= 0
          {
@@ -1322,40 +1322,46 @@ messages:
       return 2;
    }
 
-   GetFactionRegenBonus(who=$, hpregen=TRUE)
+   GetFactionHealthRegenBonus(who=$,maxhealth=FALSE)
    {
       local iBonus, iFaction;
 
       // Rationale behind the numbers:
-      // This number is subtracted from regeneration time (measured in miliseconds).
-      // Non-intriguing mortals get a small bonus of 200.
-      // Maximum normal power is 700.
+      // This number is a percentage boost to regeneration.
+      // Non-intriguing mortals get a small bonus of 5%.
+      // Maximum normal power is 30%.
 
       if who = $
       {
-         debug("bad who!");
-         return FALSE;
+         Debug("Bad who in GetFactionHealthRegenBonus!");
+
+         return 0;
       }
 
-      iBonus = 0;
-
-      iFaction = send(who,@GetFaction);
-      if (iFaction = FACTION_DUKE)
-         OR ((iFaction = FACTION_PRINCESS) AND (hpregen))
-         OR ((iFaction = FACTION_REBEL) AND (NOT hpregen))
+      if NOT IsClass(who,&Player)
       {
          return 0;
       }
 
-      // Player is under 40
-      if not Send(who,@PlayerIsIntriguing)
-      {
-         return 200;
-      }
-    
-      iBonus = Send(self,@CalcFactionBonus,#base=700,#faction=iFaction);
+      iBonus = 0;
 
-      if Random(0,100) = 0 AND iFaction <> FACTION_NEUTRAL
+      iFaction = Send(who,@GetFaction);
+
+      // Only Jonas players get health bonus.
+      if (iFaction <> FACTION_REBEL)
+      {
+         return 0;
+      }
+
+      if NOT Send(who,@PlayerIsIntriguing)
+      {
+         return 5;
+      }
+
+      iBonus = Send(self,@CalcFactionBonus,#base=30,#faction=iFaction);
+
+      if NOT maxhealth
+         AND Random(0,500) = 0
       {
          if iBonus <= 0
          {
@@ -1368,11 +1374,68 @@ messages:
                  #parm1=Send(self,@GetFactionLiege,#faction=iFaction));
          }
       }
-      
+
       return iBonus;
    }
 
-   GetFactionDefenseBonus(who=$)
+   GetFactionManaRegenBonus(who=$,maxmana=FALSE)
+   {
+      local iBonus, iFaction;
+
+      // Rationale behind the numbers:
+      // This number is a percentage boost to regeneration.
+      // Non-intriguing mortals get a small bonus of 5%.
+      // Maximum normal power is 30%.
+
+      if who = $
+      {
+         Debug("Bad who in GetFactionManaRegenBonus!");
+
+         return 0;
+      }
+
+      if NOT IsClass(who,&Player)
+      {
+         return 0;
+      }
+
+      iBonus = 0;
+
+      iFaction = Send(who,@GetFaction);
+
+      // Only Princess players get mana bonus.
+      if (iFaction <> FACTION_PRINCESS)
+      {
+         return 0;
+      }
+
+      // Player is under 40
+      if NOT Send(who,@PlayerIsIntriguing)
+      {
+         return 5;
+      }
+
+      iBonus = Send(self,@CalcFactionBonus,#base=30,#faction=iFaction);
+
+      if NOT maxmana
+         AND Random(0,500) = 0
+      {
+         if iBonus <= 0
+         {
+            Post(who,@MsgSendUser,#message_rsc=parliament_regen_down,
+                 #parm1=Send(self,@GetFactionLiege,#faction=iFaction));
+         }
+         else
+         {
+            Post(who,@MsgSendUser,#message_rsc=parliament_regen_up,
+                 #parm1=Send(self,@GetFactionLiege,#faction=iFaction));
+         }
+      }
+
+      return iBonus;
+   }
+
+   GetFactionDefenseBonus(who=$,stroke_obj=$)
    {
       local iBonus, iFaction;
 
@@ -1389,21 +1452,23 @@ messages:
 
       iBonus = 0;
 
-      iFaction = send(who,@GetFaction);
+      iFaction = Send(who,@GetFaction);
       if (iFaction = FACTION_DUKE) OR (iFaction = FACTION_REBEL)
       {
          return 0;
       }
 
-      // Player is under 40
-      if not Send(who,@PlayerIsIntriguing)
+      // Player is under 50
+      if NOT Send(who,@PlayerIsIntriguing)
       {
          return 50;
       }
 
       iBonus = Send(self,@CalcFactionBonus,#base=200,#faction=iFaction);
 
-      if Random(0,100) = 0 AND iFaction <> FACTION_NEUTRAL
+      if stroke_obj <> $
+         AND iFaction <> FACTION_NEUTRAL
+         AND Random(0,100) = 0
       {
          if iBonus <= 0
          {
@@ -1420,7 +1485,7 @@ messages:
       return iBonus;
    }
 
-   GetFactionVigorBonus(who=$)
+   ModifyVigorCost(who=$,amount=0)
    {
       local iBonus, iFaction;
 
@@ -1432,21 +1497,24 @@ messages:
       if who = $
       {
          debug("bad who!");
-         return FALSE;
+         return amount;
       }
 
-      iBonus = 0;
+      if NOT IsClass(who,&Player)
+      {
+         return amount;
+      }
 
       iFaction = send(who,@GetFaction);
       if (iFaction = FACTION_PRINCESS) OR (iFaction = FACTION_REBEL)
       {
-         return 0;
+         return amount;
       }
 
-      // Player is under 40
+      // Players under 40 HPs get a 5% reduction.
       if not Send(who,@PlayerIsIntriguing)
       {
-         return 5;
+         return amount * 95 / 100;
       }
 
       iBonus = Send(self,@CalcFactionBonus,#base=30,#faction=iFaction);
@@ -1465,14 +1533,8 @@ messages:
          }
       }
 
-      return iBonus;
+      return amount * (100 - iBonus) / 100;
    }
-
-   BetaPotionsEnabled()
-   {
-      return pbHiddenSwitch;
-   }
-
 
 end
 ////////////////////////////////////////////////////////////////////////////////

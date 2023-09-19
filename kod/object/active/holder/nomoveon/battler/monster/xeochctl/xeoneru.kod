@@ -42,7 +42,7 @@ resources:
    vrDesc = XeoNeru_desc_rsc
    vrKocName = XeoNeru_koc_name_rsc
 
-   viAttack_type = ATCK_WEAP_MAGIC
+   viAttack_type = ATK_TYPE_MAGIC
    viLevel = 700
    viDifficulty = 9
    viSpeed = SPEED_VERY_FAST
@@ -57,21 +57,19 @@ properties:
 
    piAnimation = ANIM_NONE
 
-   // percent of victim's max mana it will try to drain, double normal rate.
-   piDrainAmount = 10
+   viSiphonStrength = 8000
 
 messages:
 
    Constructed()
    {
-      plResistances = [ [-ATCK_WEAP_SLASH, -20 ],
-                        [-ATCK_SPELL_ALL, 100 ]
+      plResistances = [ [-ATK_TYPE_SLASH, -20 ],
+                        [-SPL_TYPE_ALL, 100 ]
                       ];
 
       piColor_Translation = Send(SYS,@EncodeTwoColorXLAT,#color1=PT_REDTODGREEN3);
 
-      plSpellBook = [ [SID_VERTIGO,6,40], [SID_EVIL_TWIN,2,60], 
-                      [SID_RING_OF_FLAMES,10,70], [SID_DEMENT,3,100] ];
+      plActions = [ [SID_VERTIGO],[SID_EVIL_TWIN],[SID_RING_OF_FLAMES],[SID_DEMENT] ];
       propagate;
    }
 

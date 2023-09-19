@@ -19,10 +19,9 @@ resources:
    include j3.lkod
 
    room_OutdoorsJ3 = j3.roo
-   room_name_OutdoorsJ3 ="The Queen's Way"
+   room_name_OutdoorsJ3 ="Queen's Way"
 
    OutdoorsJ3_music = forest.ogg
-
 
 classvars:
 
@@ -40,7 +39,7 @@ classvars:
 
 properties:
 
-   prMusic = OutdoorsD5_music
+   prMusic = OutdoorsJ3_music
 
    prRoom = room_OutdoorsJ3
    piRoom_num = RID_J3
@@ -64,17 +63,23 @@ messages:
 
    Constructed()
    {
-      plMonsters = [ [&SpiderBaby, 40], [&GiantRat, 60] ];
+      plMonsters = [ [&Centipede, 100] ];
 
-      plGenerators = [ [21, 17], [30, 15], [10, 16], [17, 7] ];
       propagate;
+   }
+
+   SetMonsterGenPoints()
+   {
+      plGenerators = [ [21, 17], [30, 15], [10, 16], [17, 7] ];
+
+      return;
    }
 
    CreateStandardObjects()
    {
       Send(self,@NewHold,#what=Create(&PrincessGuard),
            #new_row=21,#new_col=12);
-   
+
       propagate;
    }
 
@@ -86,9 +91,9 @@ messages:
       plExits = Cons([ 22,10, ROOM_LOCKED_DOOR ],plExits);
       plExits = Cons([ 21,11, ROOM_LOCKED_DOOR ],plExits);
 
-      plExits = Cons([ 22,15, ROOM_LOCKED_DOOR ],plExits);
-      plExits = Cons([ 22,16, ROOM_LOCKED_DOOR ],plExits);
-      plExits = Cons([ 21,15, ROOM_LOCKED_DOOR ],plExits);
+      plExits = Cons([ 22,15, RID_RATCAVE3, 5, 73, ROTATE_NONE ],plExits);
+      plExits = Cons([ 22,16, RID_RATCAVE3, 5, 73, ROTATE_NONE ],plExits);
+      plExits = Cons([ 21,15, RID_RATCAVE3, 5, 73, ROTATE_NONE ],plExits);
          
       plEdge_Exits = $;
       plEdge_Exits = Cons([LEAVE_WEST, RID_I3, 25, 60, ROTATE_NONE,ROW_IS_LESS_THAN,19], plEdge_exits);

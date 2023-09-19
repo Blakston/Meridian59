@@ -280,15 +280,15 @@ messages:
 
       oRoom = Send(poOwner,@GetOwner);
 
-      // AMA modifies item spellpower.
+      // AMA (room) modifies item spellpower.
       if Send(oRoom,@CheckRoomFlag,#flag=ROOM_ANTI_MAGIC)
       {
-         oModifierSpell = Send(SYS,@FindSpellByNum,#num=SID_ANTIMAGIC_AURA);
+         oModifierSpell = Send(SYS,@FindSpellByNum,#num=SID_ANTIMAGIC_ROOM);
          iSpellPower = Send(oModifierSpell,@ModifySpellPower,
                               #oRoom=oRoom,#oSpell=oSpell);
       }
 
-      // Mana convergence adds spellpower.
+      // Check for radius enchantment spellpower modifications.
       foreach i in Send(poOwner,@GetRadiusEnchantments)
       {
          iSpellPower = Send(Nth(i,2),@ModifySpellPower,#who=poOwner,
@@ -372,6 +372,21 @@ messages:
       return vrLabelName;
    }
 
+   SendBrokenMessage()
+   "Last charge consumed, send message about the item's fate."
+   {
+      // Post this so it prints AFTER the spell message.
+      if (poOwner <> $
+         AND IsClass(poOwner,&User))
+      {
+         Post(poOwner,@MsgSendUser,#message_rsc=vrBroken,
+               #parm1=Send(self,@GetCapDef),
+               #parm2=Send(self,@GetName));
+      }
+
+      return;
+   }
+
    SetHits(number = $)
    {
       if (number = $)
@@ -383,14 +398,7 @@ messages:
 
       if (piHits <= 0)
       {
-         // Post this so it prints AFTER the spell message.
-         if (poOwner <> $
-            AND IsClass(poOwner,&User))
-         {
-            Post(poOwner,@MsgSendUser,#message_rsc=vrBroken,
-                  #parm1=Send(self,@GetCapDef),
-                  #parm2=Send(self,@GetName));
-         }
+         Send(self,@SendBrokenMessage);
 
          // Due to a lack of art resources we are now deleting all used up
          // spellitems. I'm leaving vbNoBrokenView in so that if/when we ever

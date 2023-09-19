@@ -227,7 +227,10 @@
     <ClInclude Include="database.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="geometry.h">
+    <ClInclude Include="astar.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="async_windows.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -448,6 +451,9 @@
     <ClCompile Include="thdmsgqueue_windows.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="astar.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Image Include="logo.ico">
@@ -456,6 +462,8 @@
     <Image Include="meridian.ico">
       <Filter>Resource Files</Filter>
     </Image>
+    <Image Include="ant.bmp" />
+    <Image Include="archetype.bmp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="BLAKSERV.HLP">
@@ -466,5 +474,8 @@
     <ResourceCompile Include="blakserv.rc">
       <Filter>Resource Files</Filter>
     </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Media Include="signal.wav" />
   </ItemGroup>
 </Project>

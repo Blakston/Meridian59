@@ -26,6 +26,7 @@ void AddBlakodToPacket(val_type obj_size,val_type obj_data);
 void AddByteToPacket(unsigned char byte1);
 void AddShortToPacket(short byte2);
 void AddIntToPacket(int byte4);
+void AddStringToPacketAsInt(const char *ptr);
 void AddStringToPacket(int int_len,const char *ptr);
 void SecurePacketBufferList(int session_id,buffer_node *blist);
 void SendPacket(int session_id);
@@ -37,5 +38,6 @@ void ClientHangupToBlakod(session_node *session);
 
 void SendBlakodBeginSystemEvent(int type);
 void SendBlakodEndSystemEvent(int type);
+void SendBlakodRegisterCallback(blakod_reg_callback *reg);
 
 #endif

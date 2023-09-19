@@ -78,17 +78,20 @@ classvars:
 
    viIndefinite = ARTICLE_AN
    viTreasure_type = TID_AVAR_CHIEF
-   viAttack_type = ATCK_WEAP_PIERCE
+   viAttack_type = ATK_TYPE_PIERCE
    viSpeed = SPEED_FAST
-   viDefault_behavior = \
-      AI_FIGHT_AGGRESSIVE | AI_MOVE_OPTIMAL_RANGE\
-      | AI_FIGHT_WIZARD_KILLER | AI_FIGHT_MONSTERS
+   viDefault_behavior = AI_FIGHT_AGGRESSIVE | AI_MOVE_OPTIMAL_RANGE
    viLevel = 135
    viDifficulty = 9
    viVisionDistance = 28
 
    // Attack range of 192, or 3 row/col.
-   viAttackRange = 192
+   viMeleeRange = 192
+   viFireRange = 640
+
+   viMeleePriority = 500
+   viMovePriority = 550
+   viFirePriority = 600
 
    viKarma = 85
    viCashmin = 650
@@ -99,15 +102,13 @@ classvars:
    vrSound_aware = avarchief_sound_aware
    vrSound_death = avarchief_sound_death
 
-   // Chance to do his 'spell' which is really a ranged attack
-   viSpellChance = 6
+   vbCanSiphon = FALSE
 
 properties:
 
    vrName = avarchief_name_rsc
    vrDesc = avarchief_desc_rsc
 
-   pbFire = FALSE
    piAnimation = ANIM_NONE
 
 messages:
@@ -128,12 +129,12 @@ messages:
 
    Constructed()
    {
-      plResistances = [ [-ATCK_SPELL_FIRE, 40 ],
-                        [-ATCK_SPELL_SHOCK, 20],
-                        [-ATCK_SPELL_ACID, -15 ],
-                        [-ATCK_SPELL_COLD, -20 ],
-                        [ATCK_WEAP_SLASH, 10 ],
-                        [ATCK_WEAP_NERUDITE, -15 ]
+      plResistances = [ [-SPL_TYPE_FIRE, 40 ],
+                        [-SPL_TYPE_SHOCK, 20],
+                        [-SPL_TYPE_ACID, -15 ],
+                        [-SPL_TYPE_COLD, -20 ],
+                        [ATK_TYPE_SLASH, 10 ],
+                        [ATK_TYPE_NERUDITE, -15 ]
                       ];
 
       propagate;
@@ -208,25 +209,6 @@ messages:
       propagate;
    }
 
-   MonsterAttack(what = $)
-   {
-      if pbFire
-      {
-         piAnimation = ANIM_FIRE;
-      }
-      else
-      {
-         piAnimation = ANIM_ATTACK;
-      }
-
-      pbFire = FALSE;
-      
-      Send(poOwner,@SomethingChanged,#what=self);
-      piAnimation = ANIM_NONE;
-
-      return;
-   }
-
    // You cannot parry the chief's attacks.
    CanParry()
    {
@@ -274,35 +256,12 @@ messages:
       return;
    }
 
-   // This is technically a ranged attack, and we use RangedAttackChance
-   // to see if we can do it. Use the same range as that for spells. We
-   // also use piSpellChance for the base chance to do our ranged attack.
-   MonsterCastSpell()
+   DoMissileAnimation()
    {
-      local iBase;
-
-      iBase = Send(self,@RangedAttackChance,#base=(piSpellChance*6));
-
-      if Random(1,iBase) = 1
-         AND Send(self,@SquaredFineDistanceTo3D,#what=poTarget)
-                  < piSpellRange * piSpellRange
-         AND Send(poOwner,@LineOfSight,#obj1=self,#obj2=poTarget)
-         AND Send(poOwner,@ReqSomethingAttack,#what=self,#victim=poTarget,
-                  #use_weapon=self)
-      {
-         Send(self,@DoMissileAttack);
-
-         return TRUE;
-      }
-
-      return FALSE;
-   }
-
-   DoMissileAttack()
-   {
-      pbFire = TRUE;
+      piAnimation = ANIM_FIRE;
+      Send(poOwner,@SomethingChanged,#what=self);
+      piAnimation = ANIM_NONE;
       Send(poOwner,@SomethingShot,#who=self,#target=poTarget,#projectile=self);
-      Send(self,@TryAttack,#what=poTarget,#stroke_obj=self);
 
       return;
    }
@@ -330,24 +289,17 @@ messages:
       return LIGHT_FLAG_NONE;
    }
 
-   GetOptimalRange()
+   IsAlliedClass(what=$)
    {
-      // Random range between 8-15 row/col units.
-      return random(512,960);
-   }
-
-   IsAlly(target = $)
-   {
-      if (IsClass(target,&Avar)
-            OR IsClass(target,&AvarShaman)
-            OR IsClass(target,&AvarChieftain))
-         AND Send(target,@GetClan) = Send(self,@GetClan)
+      if (IsClass(what,&Avar)
+            OR IsClass(what,&AvarShaman)
+            OR IsClass(what,&AvarChieftain))
+         AND (Send(what,@GetClan) = Send(self,@GetClan))
       {
          return TRUE;
       }
 
-      // Charm checks up higher.
-      propagate;
+      return FALSE;
    }
 
    SpecialHatredBehavior(what=$)
@@ -361,7 +313,7 @@ messages:
          if poOwner <> $ AND Send(poOwner,@GetRoomNum) = RID_KC3
             AND Send(what,@GetClan) <> Send(self,@GetClan)
          {
-            return 25;
+            return 250;
          }
       }
 

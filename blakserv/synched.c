@@ -176,7 +176,7 @@ void SynchedProtocolParse(session_node *s,client_msg *msg)
       index += 4;
       s->os_version_minor = *(int *)(msg->data+index);
       index += 4;
-      s->machine_ram = *(int *)(msg->data+index);
+      s->flags = *(int *)(msg->data+index);
       index += 4;
       s->machine_cpu = *(int *)(msg->data+index);
       index += 4;
@@ -261,14 +261,7 @@ void SynchedProtocolParse(session_node *s,client_msg *msg)
             break;
          }
       }
-/*
-  if (s->account->credits <= 0)
-  {
-  AddByteToPacket(AP_NOCREDITS);
-  SendPacket(s->session_id);
-  break;
-  }
-*/
+
       last_download_time = *(int *)(msg->data + index);
       index += 4; 
       
@@ -361,11 +354,10 @@ void SynchedAcceptLogin(session_node *s,char *name,char *password)
    account_node *a;
    int now = GetTime();
 
-   a = AccountLoginByName(name); /* maps the GUEST_ACCOUNT_NAME into a real account */
+   a = AccountLoginByName(name);
 
    /* bad username, bad password, or suspended? */
-   if (a == NULL ||
-       (a->type != ACCOUNT_GUEST && strcmp(a->password,password) != 0))
+   if (a == NULL || strcmp(a->password, password) != 0)
    {
       s->syn->failed_tries++;
       if (s->syn->failed_tries == ConfigInt(LOGIN_MAX_ATTEMPTS))
@@ -375,30 +367,9 @@ void SynchedAcceptLogin(session_node *s,char *name,char *password)
          HangupSession(s);
          return;
       }
-      if (!stricmp(name,ConfigStr(GUEST_ACCOUNT)))
-      {
-         AddByteToPacket(AP_GUEST);
-         AddByteToPacket(1); /* we're hanging 'em up */
-         AddIntToPacket(ConfigInt(GUEST_SERVER_MIN));
-         AddIntToPacket(ConfigInt(GUEST_SERVER_MAX));
-         
-         /*
-           char *too_many_str;
-           
-           too_many_str = ConfigStr(GUEST_TOO_MANY);
-           AddByteToPacket(AP_MESSAGE);
-           AddStringToPacket(strlen(too_many_str),too_many_str);
-           AddByteToPacket(LA_LOGOFF);
-         */
-         
-         SendPacket(s->session_id);
-         HangupSession(s);
-      }
-      else
-      {
-         AddByteToPacket(AP_LOGINFAILED);
-         SendPacket(s->session_id);
-      }
+
+      AddByteToPacket(AP_LOGINFAILED);
+      SendPacket(s->session_id);
       return;
    }
 
@@ -436,17 +407,7 @@ void SynchedAcceptLogin(session_node *s,char *name,char *password)
    /* suspension lifted naturally? */
    if (a->suspend_time)
       SuspendAccountAbsolute(a, 0);
-   
-   /* tell guest client what other servers may be available */
-   if (!stricmp(name,ConfigStr(GUEST_ACCOUNT)))
-   {
-      AddByteToPacket(AP_GUEST);
-      AddByteToPacket(0); /* we're letting 'em stay, give 'em the new range */
-      AddIntToPacket(ConfigInt(GUEST_SERVER_MIN));
-      AddIntToPacket(ConfigInt(GUEST_SERVER_MAX));
-      SendPacket(s->session_id);
-   }
-   
+
    /* check if anyone already logged in on same account */
    other = GetSessionByAccount(a);
    if (other != NULL)
@@ -510,6 +471,7 @@ void VerifyLogin(session_node *s)
 
    AddByteToPacket(AP_LOGINOK);
    AddByteToPacket((char)(s->account->type));
+   AddIntToPacket(s->session_id);
    SendPacket(s->session_id);
 
    /* they're logged in now.  Check their version number, and if old tell 'em
@@ -721,7 +683,40 @@ void LogUserData(session_node *s)
 {
    char buf[500];
 
-   sprintf(buf,"LogUserData/4 got %i from %s, ",s->account->account_id,s->conn.name);
+   sprintf(buf, "LogUserData/4 got %i from %s, ",
+      s->account->account_id, s->conn.name);
+
+   if (s->version_major == 50)
+   {
+      // Add flags in int form for log parsing.
+      sprintf(buf + strlen(buf), "flags %i, ", s->flags);
+
+      // Human readable.
+      if (s->flags & LF_HARDWARE_RENDERER)
+         strcat(buf, "HW renderer, ");
+      else
+         strcat(buf, "SW renderer, ");
+      if (s->flags & LF_LARGE_GRAPHICS)
+         strcat(buf, "L graphics, ");
+      else
+         strcat(buf, "S graphics, ");
+      if (s->flags & (LF_DYNAMIC_LIGHTING | LF_HARDWARE_RENDERER))
+         strcat(buf, "dynlight ON, ");
+      else
+         strcat(buf, "dynlight OFF, ");
+      if (s->flags & LF_MUSIC_ON)
+         strcat(buf, "music ON, ");
+      else
+         strcat(buf, "music OFF, ");
+      if (s->flags & LF_WEATHER_EFFECTS)
+         strcat(buf, "particles ON, ");
+      else
+         strcat(buf, "particles OFF, ");
+      if (s->flags & (LF_WIREFRAME | LF_HARDWARE_RENDERER))
+         strcat(buf, "wireframe ON, ");
+      else
+         strcat(buf, "wireframe OFF, ");
+   }
 
    switch (s->os_type)
    {
@@ -739,10 +734,8 @@ void LogUserData(session_node *s)
       break;
    }
    
-   sprintf(buf+strlen(buf),", %i, %i, ",s->os_version_major,s->os_version_minor);
+   sprintf(buf+strlen(buf),", %i.%i, ",s->os_version_major,s->os_version_minor);
    
-
-
    switch (s->machine_cpu&0xFFFF)	/* charlie: the cpu level is in the top 16 bits */
    {
    case PROCESSOR_INTEL_386 :
@@ -761,21 +754,22 @@ void LogUserData(session_node *s)
    
    strcat(buf,", ");
 
-   sprintf(buf+strlen(buf),"%i MB",s->machine_ram/(1024*1024));
-   strcat(buf,", ");
+   // Memory no longer sent.
+   //sprintf(buf+strlen(buf),"%i MB",s->machine_ram/(1024*1024));
+   //strcat(buf,", ");
    
    sprintf(buf+strlen(buf),"%ix%ix%i (0x%08X)",s->screen_x,s->screen_y,s->screen_color_depth,((s->machine_cpu&0xFFFF0000)|s->displays_possible));
 
    if (s->partner)
       sprintf(buf+strlen(buf),", Partner %d",s->partner);
 
-   strcat(buf,", ");
+   // Noise.
+   /*strcat(buf,", ");
    sprintf(buf+strlen(buf),"%s",LockConfigStr(ADVERTISE_FILE1));
    UnlockConfigStr();
-
    strcat(buf,", ");
    sprintf(buf+strlen(buf),"%s",LockConfigStr(ADVERTISE_FILE2));
-   UnlockConfigStr();
+   UnlockConfigStr();*/
 
    sprintf(buf + strlen(buf), " client version %i", s->version_major * 100 + s->version_minor);
    strcat(buf,"\n");
@@ -786,17 +780,6 @@ void LogUserData(session_node *s)
 void SynchedDoMenu(session_node *s)
 {
    SynchedSendMenuChoice(s);
-             
-   AddByteToPacket(AP_CREDITS);
-   /* round any fraction up */
-   AddIntToPacket(20);
-   /*
-   if (s->account->credits%100 == 0)
-      AddIntToPacket(s->account->credits/100);
-   else
-      AddIntToPacket(s->account->credits/100+1);
-      */
-   SendPacket(s->session_id);
 }
 
 void SynchedSendMenuChoice(session_node *s)
@@ -816,16 +799,11 @@ void SynchedSendMenuChoice(session_node *s)
    for (i=0;i<SEED_COUNT;i++)
       AddIntToPacket(s->seeds[i]);
    SendPacket(s->session_id);
-
 }
 
 void SynchedGotoGame(session_node *s,int last_download_time)
 {
-   int num_new_files;
-   char *str;
-   
    /* first check to see if they can goto game (if they have >= 1 char) */
-
    if (CountUserByAccountID(s->account->account_id) <= 0)
    {
       /* Tell user that he has no characters */
@@ -840,9 +818,12 @@ void SynchedGotoGame(session_node *s,int last_download_time)
 
    s->last_download_time = last_download_time;
 
+   // Old package downloader.
+#if 0
    /* dprintf("sess %i has %i new files to delete\n",s->session_id,CountNewDelresFile(s)); */
 
-   num_new_files = CountNewDLFile(s);
+   int num_new_files = CountNewDLFile(s);
+   char *str;
    if (num_new_files > 0)
    {
       // Tell client there's files to be downloaded, and don't go into game mode.
@@ -904,6 +885,7 @@ void SynchedGotoGame(session_node *s,int last_download_time)
 
       SendPacket(s->session_id);
    }
+#endif
 
    // All set to go to game mode.
 

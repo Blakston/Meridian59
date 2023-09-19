@@ -559,11 +559,6 @@ oo_modrelic_name = de "Modell eines Relikt Qors"
 oo_modrelic_desc = de \
    "Auf einem Schild unter dem Modell steht:\nDer Zweck dieses unheiligen "
    "Artefakts ist verloren."
-oo_modmananode_name = de "Miniatur einer magischen Quelle"
-oo_modmananode_desc = de \
-   "Auf einem Schild unter dem Modell steht:\nEin Magier größere magische "
-   "Kräfte erlangen, indem er sich mit einem solchen Zusammenfluss magischer "
-   "Energien verbindet."
 oo_modgrapes_name = de "Wächserne Traubenplatte"
 oo_modgrapes_desc = de \
    "Auf einem Schild unter dem Modell steht:\nBitte die Wachstrauben nicht "
@@ -603,15 +598,17 @@ oo_RRwashbasin_desc = de \
 oo_Qormas_snowman_name = de "Der Schneemann"
 oo_Qormas_snowman_desc = de \
    "Der Schneemann sieht eigentlich friedlich aus, aber irgendwas an ihm "
-   "weckt das Gefühl in Dir, dass er böse ist."
+   "weckt das Gefühl in Dir, dass er böse sein könnte."
 oo_Qormas_tree_name = de "Der Qormas Baum"
 oo_Qormas_tree_desc = de \
-   "Jedes Jahr warten unendlich viele Kinder darauf, unter dem Qormas Baum "
-   "zu schauen, um zu sehen, welch schöne Todeswerkzeuge sie bekommen haben."
+   "Jahr für Jahr warten unendlich viele bösartige Kinder darauf um unter "
+   "den Qormas Baum zu schauen und zu entdecken, welch elegant verpackte "
+   "Todeswerkzeuge auf sie warten."
 oo_Qormas_tree_big_name = de "Der Qormas Baum"
 oo_Qormas_tree_big_desc = de \
-   "Jedes Jahr warten unendlich viele Kinder darauf, unter dem Qormas Baum "
-   "zu schauen, um zu sehen, welch schöne Todeswerkzeuge sie bekommen haben."
+   "Jahr für Jahr warten unendlich viele bösartige Kinder darauf um unter "
+   "den Qormas Baum zu schauen und zu entdecken, welch elegant verpackte "
+   "Todeswerkzeuge auf sie warten."
 oo_Qormas_wreath_name = de "Der Qormas Kranz"
 oo_Qormas_wreath_desc = de "Ein Qormas Kranz"
 oo_modportal_name = de "Miniaturportal"
@@ -717,3 +714,29 @@ oo_hist_princess_desc = de \
     "Auf einem Schild unter dem Modell steht:\n"
     "Diese königliche Frau hat eine kleine Ähnlichkeit mit "
     "Prinzessin Kateriina."
+oo_shrubee1_name = de "Der Busch"
+oo_shrubee1_desc = de \
+   "Dies ist eine hölzerne Pflanze mit mehreren Stämmen, die nahe am Boden "
+   "verzweigen."
+oo_shrubee2_name = de "Der Busch"
+oo_shrubee2_desc = de \
+   "Dies ist eine hölzerne Pflanze mit mehreren Stämmen, die nahe am Boden "
+   "verzweigen."
+oo_midtree1_name = de "Der Baum"
+oo_midtree1_desc = de \
+   "Die Bäume spenden kühlenden Schatten in der wunderschönen Landschaft."
+oo_midtree2_name = de "Der Baum"
+oo_midtree2_desc = de \
+   "Die Bäume spenden kühlenden Schatten in der wunderschönen Landschaft."
+oo_midtree3_name = de "Der Baum"
+oo_midtree3_desc = de \
+   "Die Bäume spenden kühlenden Schatten in der wunderschönen Landschaft."
+oo_midtree4_name = de "Der Baum"
+oo_midtree4_desc = de \
+   "Die Bäume spenden kühlenden Schatten in der wunderschönen Landschaft."
+oo_talltree1_name = de "Der Baum"
+oo_talltree1_desc = de "Ein frischer Duft umgibt diesen großen Baum."
+oo_talltree2_name = de "Der Baum"
+oo_talltree2_desc = de "Ein frischer Duft umgibt diesen großen Baum."
+oo_talltree3_name = de "Der Baum"
+oo_talltree3_desc = de "Ein frischer Duft umgibt diesen großen Baum."

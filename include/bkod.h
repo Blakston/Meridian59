@@ -42,9 +42,14 @@ enum opcode_id {
    OP_GOTO_IF_NEQ_NULL_P,
    OP_GOTO_IF_NEQ_NULL_V,
    // Call instructions
+   // C calls without settings (First, Nth etc)
    OP_CALL_STORE_NONE,
    OP_CALL_STORE_L,
    OP_CALL_STORE_P,
+   // C calls with settings (Send, Create etc)
+   OP_CALL_SETTINGS_STORE_NONE,
+   OP_CALL_SETTINGS_STORE_L,
+   OP_CALL_SETTINGS_STORE_P,
    // Unary instructions
    OP_UNARY_NOT_L,
    OP_UNARY_NOT_P,
@@ -93,6 +98,12 @@ enum opcode_id {
    OP_ISCLASS_P,
    OP_ISCLASS_CONST_L,
    OP_ISCLASS_CONST_P,
+   OP_FIRST_L,
+   OP_FIRST_P,
+   OP_REST_L,
+   OP_REST_P,
+   OP_GETCLASS_L,
+   OP_GETCLASS_P,
    NUMBER_OF_OPCODES // Must be last.
 };
 
@@ -118,7 +129,6 @@ enum
 enum
 {
    CREATEOBJECT = 1,
-   GETCLASS = 5,
 
    SENDMESSAGE = 11,
    POSTMESSAGE = 12,
@@ -160,6 +170,7 @@ enum
    GETTIMEREMAINING = 53,
    ISTIMER = 54,
 
+   CHANGESECTORFLAGBSP = 58,
    MOVESECTORBSP = 59,
    CHANGETEXTUREBSP = 60,
    CREATEROOMDATA = 61,
@@ -168,9 +179,8 @@ enum
 
    LINEOFSIGHTVIEW = 69,
    LINEOFSIGHTBSP = 70,
-
+   INTERSECTLINECIRCLE = 71,
    STRINGTONUMBER = 72,
-
    CANMOVEINROOMBSP = 73,
    GETLOCATIONINFOBSP = 74,
    BLOCKERADDBSP = 75,
@@ -179,13 +189,16 @@ enum
    BLOCKERCLEARBSP = 78,
    GETRANDOMPOINTBSP = 79,
    GETSTEPTOWARDSBSP = 80,
+   GETRANDOMMOVEDESTBSP = 81,
+   GETSECTORHEIGHTBSP = 82,
+   SETROOMDEPTHOVERRIDEBSP = 83,
+   CALCUSERMOVEMENTBUCKET = 84,
 
    DELLASTLISTELEM = 98,
    GETALLLISTNODESBYCLASS = 99,
    APPENDLISTELEM = 100,
    CONS = 101,
-   FIRST = 102,
-   REST = 103,
+
    LENGTH = 104,
    NTH = 105,
    MLIST = 106,
@@ -205,6 +218,8 @@ enum
    GETTIME = 120,
    GETTICKCOUNT = 121,
    GETDATEANDTIME = 122,
+   GETUNIXTIMESTRING = 123,
+   OLDTIMESTAMPFIX = 124,
 
    ABS = 131,
    BOUND = 132,
@@ -255,8 +270,12 @@ enum
 #define MIN_KOD_INT (1<<27)      // 28th bit is sign. 0x08000000 == kod -134217728
 #define KODFINENESS 64           // how many fine rows give a full row
 
-#define KOD_FALSE (1 << 28)
-#define KOD_TRUE ((1 << 28)+1)
+// num bits to shift a tag to get it to the correct position.
+// 28 for 32-bit kod data types, presumably 56 for 64-bit.
+#define KOD_SHIFT 28
+
+#define KOD_FALSE (TAG_INT << KOD_SHIFT)
+#define KOD_TRUE ((TAG_INT << KOD_SHIFT)+1)
 
 // Defined here for sendmsg.h/c and codegen.c.
 // Max number of locals in a message.

@@ -42,7 +42,9 @@ typedef struct {
 #define DESC_INSIDE        0x00000010      // Display "inside" button
 #define DESC_ACTIVATE      0x00000020      // Display "use" (activate) button
 #define DESC_APPLY         0x00000040      // Display "use" (apply) button
-
+#define DESC_BUY           0x00000080      // Display "buy" button
+#define DESC_OFFER         0x00000100      // Display "offer" button
+#define DESC_QUEST         0x00000200      // Display "quest" button
 #define DESC_NOAGE         0x00000002      // Don't display age of player
 #define DESC_NOSPECIAL     0x00000004      // Don't display special string of player
 #define DESC_NOURL         0x00000008      // Don't display special string of player
@@ -52,12 +54,16 @@ typedef struct {
    object_node *obj;
    BYTE         flags;
    char        *name;
+   char        *schoolname;
    char        *description;
    char        *fixed_string;
    char        *url;
    int          age;
-   int	        numPages;
-   int	        currentPage;
+   int	       numPages;
+   int	       currentPage;
+   char        *level;
+   char        *mana;
+   char        *vigor;
    HFONT        hFontTitle;
 } DescDialogStruct;
 
@@ -83,7 +89,8 @@ typedef struct {
 
 M59EXPORT void SetDescParams(HWND hParent, int flags);
 M59EXPORT void DisplayDescription(object_node *obj, BYTE flags, char *description, 
-                                  char *extra_string, char *url);
+                                  char *extra_string, char *url, char *schoolname,
+                                  char *level, char *mana, char *vigor);
 
 M59EXPORT list_type DisplayLookList(HWND hParent, char *title, list_type l, int flags);
 

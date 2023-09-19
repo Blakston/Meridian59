@@ -85,10 +85,6 @@ int C_CreateObject(int object_id,local_var_type *local_vars,
 		   int num_normal_parms,parm_node normal_parm_array[],
 		   int num_name_parms,parm_node name_parm_array[]);
 
-int C_GetClass(int object_id,local_var_type *local_vars,
-	       int num_normal_parms,parm_node normal_parm_array[],
-	       int num_name_parms,parm_node name_parm_array[]);
-
 int C_StringEqual(int object_id,local_var_type *local_vars,
 		  int num_normal_parms,parm_node normal_parm_array[],
 		  int num_name_parms,parm_node name_parm_array[]);
@@ -173,6 +169,22 @@ int C_GetLocationInfoBSP(int object_id, local_var_type *local_vars,
 	int num_normal_parms, parm_node normal_parm_array[],
 	int num_name_parms, parm_node name_parm_array[]);
 
+int C_GetSectorHeightBSP(int object_id, local_var_type *local_vars,
+   int num_normal_parms, parm_node normal_parm_array[],
+   int num_name_parms, parm_node name_parm_array[]);
+
+int C_SetRoomDepthOverrideBSP(int object_id, local_var_type *local_vars,
+   int num_normal_parms, parm_node normal_parm_array[],
+   int num_name_parms, parm_node name_parm_array[]);
+
+int C_CalcUserMovementBucket(int object_id, local_var_type *local_vars,
+   int num_normal_parms, parm_node normal_parm_array[],
+   int num_name_parms, parm_node name_parm_array[]);
+
+int C_IntersectLineCircle(int object_id, local_var_type *local_vars,
+   int num_normal_parms, parm_node normal_parm_array[],
+   int num_name_parms, parm_node name_parm_array[]);
+
 int C_CanMoveInRoomBSP(int object_id, local_var_type *local_vars,
 	int num_normal_parms, parm_node normal_parm_array[],
 	int num_name_parms, parm_node name_parm_array[]);
@@ -188,6 +200,10 @@ int C_LineOfSightView(int object_id, local_var_type *local_vars,
 int C_ChangeTextureBSP(int object_id, local_var_type *local_vars,
 	int num_normal_parms, parm_node normal_parm_array[],
 	int num_name_parms, parm_node name_parm_array[]);
+
+int C_ChangeSectorFlagBSP(int object_id, local_var_type *local_vars,
+   int num_normal_parms, parm_node normal_parm_array[],
+   int num_name_parms, parm_node name_parm_array[]);
 
 int C_MoveSectorBSP(int object_id, local_var_type *local_vars,
 	int num_normal_parms, parm_node normal_parm_array[],
@@ -213,6 +229,10 @@ int C_GetRandomPointBSP(int object_id, local_var_type *local_vars,
 	int num_normal_parms, parm_node normal_parm_array[],
 	int num_name_parms, parm_node name_parm_array[]);
 
+int C_GetRandomMoveDestBSP(int object_id, local_var_type *local_vars,
+   int num_normal_parms, parm_node normal_parm_array[],
+   int num_name_parms, parm_node name_parm_array[]);
+
 int C_GetStepTowardsBSP(int object_id, local_var_type *local_vars,
 	int num_normal_parms, parm_node normal_parm_array[],
 	int num_name_parms, parm_node name_parm_array[]);
@@ -222,14 +242,6 @@ int C_AppendListElem(int object_id,local_var_type *local_vars,
          int num_name_parms,parm_node name_parm_array[]);
 
 int C_Cons(int object_id,local_var_type *local_vars,
-	   int num_normal_parms,parm_node normal_parm_array[],
-	   int num_name_parms,parm_node name_parm_array[]);
-
-int C_First(int object_id,local_var_type *local_vars,
-	    int num_normal_parms,parm_node normal_parm_array[],
-	    int num_name_parms,parm_node name_parm_array[]);
-
-int C_Rest(int object_id,local_var_type *local_vars,
 	   int num_normal_parms,parm_node normal_parm_array[],
 	   int num_name_parms,parm_node name_parm_array[]);
 
@@ -304,6 +316,14 @@ int C_DelLastListElem(int object_id, local_var_type *local_vars,
 int C_GetTime(int object_id,local_var_type *local_vars,
 	      int num_normal_parms,parm_node normal_parm_array[],
 	      int num_name_parms,parm_node name_parm_array[]);
+
+int C_GetUnixTimeString(int object_id, local_var_type *local_vars,
+         int num_normal_parms, parm_node normal_parm_array[],
+         int num_name_parms, parm_node name_parm_array[]);
+
+int C_OldTimestampFix(int object_id, local_var_type *local_vars,
+         int num_normal_parms, parm_node normal_parm_array[],
+         int num_name_parms, parm_node name_parm_array[]);
 
 int C_GetTickCount(int object_id,local_var_type *local_vars,
 	      int num_normal_parms,parm_node normal_parm_array[],

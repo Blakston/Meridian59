@@ -37,9 +37,12 @@ resources:
 
    // Quest description.
    jalanecklaceqt_icon_rsc = jalaneck.bgf
-   jalanecklaceqt_name_rsc = "Jala necklace quest"
+   jalanecklaceqt_name_rsc = "The Necklace of Song"
    jalanecklaceqt_desc_rsc = \
-      "Help an NPC identify a potion."
+      "You've heard rumors of a powerful magical necklace able to amplify the "
+      "power of Jala songs.  Arguably, Parrin Aragone knows more than anyone "
+      "else when it comes to Jala's magic.  He might just have some information "
+      "about how to obtain such an item..."
 
    jalanecklaceqt_nodetwo_rsc = \
       "Go and ask Moxal ix'Hanak about the \"necklace\"."
@@ -52,11 +55,14 @@ resources:
    jalanecklaceqt_nodefive_rsc = \
       "%s%s says to tell %s%s to just let you \"sing\" for %s."
    jalanecklaceqt_nodesix_rsc = \
-      "%s%s wants you to play a song, and then give %s your lute."
+      "%s%s would like you to play a song, then hand %s your lute.  Be sure "
+      "not to offer a fine or a true lute as %s%s would surely feel guilty "
+      "accepting such a rare gift."
    jalanecklaceqt_nodeseven_rsc = \
       "Go back to Moxal ix'Hanak and let him know you were successful."
    jalanecklaceqt_completed_rsc = \
-      "You have completed the Jala neckace quest."
+      "You have obtained a mystical Jala Necklace, which will greatly boost "
+      "the power of any Jala song you sing."
 
    // Quest resources.
    jala_necklace_trigger = "necklace"
@@ -390,7 +396,8 @@ messages:
       if index = QNT_ID_JALA_NECKLACE_SIX
       {
          AddPacket(4,Send(oDestNPC,@GetDef), 4,Send(oDestNPC,@GetName),
-                   4,Send(oDestNPC,@GetHimHer));
+                   4,Send(oDestNPC,@GetHimHer), 4,Send(oDestNPC,@GetDef),
+                   4,Send(oDestNPC,@GetName));
 
          return;
       }

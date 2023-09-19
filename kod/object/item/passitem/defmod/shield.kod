@@ -52,11 +52,8 @@ classvars:
    viLayer = 1
 
 properties:
-   
-   piUsed = UNUSED
 
-   // The bonus to block afforded by the shield.
-   piBlockBonus = 0
+   piUsed = UNUSED
 
 messages:
 
@@ -91,7 +88,7 @@ messages:
    }
 
    // Shields only reduce damage if you make your block check.
-   ModifyDefenseDamage(who = $,what = $,damage = $,atype = 0,aspell = 0)
+   ModifyDefenseDamage(who = $,what = $,damage = $,atype = 0,stype= 0)
    {
       local oBlock;
 
@@ -213,6 +210,14 @@ messages:
 
    SendWindowOverlayAnimation()
    {
+      local iFlags;
+
+      iFlags = piItem_flags & ITEM_PALETTE_MASK;
+      if iFlags <> 0
+      {
+         AddPacket(1,ANIMATE_TRANSLATION, 1,iFlags);
+      }
+
       if piUsed = DEFENDING
       { 
          AddPacket(1,ANIMATE_ONCE,4,1000,2,2,2,2,2,1);
@@ -239,7 +244,7 @@ messages:
    {
       return vrShield_overlay;
    }
-   
+
    GetOverlayHotspot()
    {
       return HS_LEFT_WEAPON;
@@ -251,12 +256,28 @@ messages:
       {
          AddPacket(1,ANIMATE_TRANSLATION,1,piItem_flags & ITEM_PALETTE_MASK);
       }
-      
+
       AddPacket(1,ANIMATE_NONE,2,2); // group 2 is the player-overlay group
-      
+
       return;
    }
 
+   CanBeUsedInQuests()
+   "Colored shields can't be given away in quests."
+   "Note that herald shields aren't given away, so aren't affected here."
+   {
+      if (piItem_flags <> 0)
+      {
+         return FALSE;
+      }
+
+      propagate;
+   }
+   
+   CanDyeItem()
+   {
+      return TRUE;
+   }
 
 end
 ////////////////////////////////////////////////////////////////////////////////

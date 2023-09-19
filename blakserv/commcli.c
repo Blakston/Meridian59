@@ -17,8 +17,9 @@
 
 #include "blakserv.h"
 
-#define NUMBER_OBJECT 5      /* writes 4 bytes, but diff "tag" */
+#define NUMBER_OBJECT 5     /* writes 4 bytes, but diff "tag" */
 #define STRING_RESOURCE 6   /* writes actual string, even though it's a resource */
+#define STRING_AS_INTEGER 7 /* converts string to 32-bit int, writes int */
 
 static buffer_node *blist;
 
@@ -59,7 +60,10 @@ void AddBlakodToPacket(val_type obj_size,val_type obj_data)
          bprintf("AddBlakodToPacket can't find string id %i\n",obj_data.v.data);
          break;
       }
-      AddStringToPacket(snod->len_data,snod->data);
+      if (num_bytes == STRING_AS_INTEGER)
+         AddStringToPacketAsInt(snod->data);
+      else
+         AddStringToPacket(snod->len_data,snod->data);
       break;
       
    case TAG_TEMP_STRING :
@@ -125,6 +129,13 @@ void AddShortToPacket(short byte2)
 void AddIntToPacket(int byte4)
 {
    blist = AddToBufferList(blist,&byte4,4);
+}
+
+void AddStringToPacketAsInt(const char *ptr)
+{
+   int number = strtol(ptr, NULL, 10);
+
+   blist = AddToBufferList(blist, &number, 4);
 }
 
 void AddStringToPacket(int int_len,const char *ptr)
@@ -256,4 +267,55 @@ void SendBlakodEndSystemEvent(int type)
    p[0].name_id = TYPE_PARM;
 
    SendTopLevelBlakodMessage(GetSystemObjectID(),GARBAGE_DONE_MSG,1,p);
+}
+
+#define BLAK_TAG_PARM_CREATE(a, b, c, d, e) \
+   do \
+   { \
+      a[b].type = CONSTANT; \
+      a[b].value = (c << KOD_SHIFT) + d; \
+      a[b].name_id = GetIDByName(e); \
+   } while (0)
+
+#define BLAK_PARM_CREATE(a, b, c, d) \
+   do \
+   { \
+      a[b].type = CONSTANT; \
+      a[b].value = c.int_val; \
+      a[b].name_id = GetIDByName(d); \
+   } while (0)
+
+void SendBlakodRegisterCallback(blakod_reg_callback *reg)
+{
+   parm_node p[12];
+
+   // Obj ID.
+   BLAK_TAG_PARM_CREATE(p, 0, TAG_OBJECT, reg->object_id, "oObject");
+   // Msg ID.
+   BLAK_TAG_PARM_CREATE(p, 1, TAG_MESSAGE, reg->message_id, "message");
+
+   // Second.
+   BLAK_TAG_PARM_CREATE(p, 2, TAG_INT, reg->second, "iSecond");
+   // Minute.
+   BLAK_TAG_PARM_CREATE(p, 3, TAG_INT, reg->minute, "iMinute");
+   // Hour.
+   BLAK_TAG_PARM_CREATE(p, 4, TAG_INT, reg->hour, "iHour");
+   // Day.
+   BLAK_TAG_PARM_CREATE(p, 5, TAG_INT, reg->day, "iDay");
+   // Month.
+   BLAK_TAG_PARM_CREATE(p, 6, TAG_INT, reg->month, "iMonth");
+   // Year.
+   BLAK_TAG_PARM_CREATE(p, 7, TAG_INT, reg->year, "iYear");
+
+   // Optional parameters.
+   // parm1
+   BLAK_PARM_CREATE(p, 8, reg->parm1, "parm1");
+   // parm2
+   BLAK_PARM_CREATE(p, 9, reg->parm2, "parm2");
+   // parm3
+   BLAK_PARM_CREATE(p, 10, reg->parm3, "parm3");
+   // parm4
+   BLAK_PARM_CREATE(p, 11, reg->parm4, "parm4");
+
+   SendTopLevelBlakodMessage(GetRealTimeObjectID(), GetIDByName("registercallback"), 12, p);
 }

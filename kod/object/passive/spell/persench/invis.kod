@@ -22,8 +22,7 @@ resources:
    invisibility_icon_rsc = iinvisib.bgf
    invisibility_desc_rsc = \
      "Qor cloaks your body with a shimmering field leaving you "
-     "invisible for a brief period.  "
-     "Requires one dark angel feather to cast."
+     "invisible for a brief period."
    invis_enchantment_rsc = \
       "\n\nYour current %s enchantment adds %i defense."
    invisibility_already_enchanted_rsc = "You are already invisible."
@@ -79,17 +78,6 @@ messages:
       return;
    }
 
-   CastSpell(who=$,iSpellPower=0,lTargets=$)
-   {
-      // If it's only self cast, spoof self as target for following code
-      if NOT vbCanCastonOthers
-      {
-         lTargets = Cons(who, lTargets);
-      }
-
-      propagate;
-   }
-
    SetSpellPlayerFlag(who=$)
    {
       Send(who,@SetPlayerFlag,#flag=PFLAG_INVISIBLE,#value=TRUE);
@@ -125,14 +113,18 @@ messages:
 
    // Stuff we handle to be a defense modifier.
 
-   ModifyDefensePower(who=$,what=$,defense_power=0,state=$)
+   ModifyDefensePower(who=$,what=$,defense_power=0)
    {
-      if (state = $)
+      local iSpellpower;
+
+      iSpellpower = Send(who,@GetEnchantedState,#what=self);
+
+      if (iSpellpower = $)
       {
          return defense_power;
       }
 
-      return (defense_power + 25 + state);
+      return defense_power + 25 + iSpellpower;
    }
 
    ModifyDefenseDamage(who=$,what=$,damage=$)

@@ -1,6 +1,7 @@
 player_cant_broadcast = de \
    "Du kannst keine Mitteilung an alle versenden, da Du nicht genügend Mana "
    "hast."
+player_broadcasts_off = de "Mitteilungen sind derzeit deaktiviert."
 player_squelched = de "Du wirst darin gehindert mit anderen zu kommunizieren."
 player_cant_send = de \
    "Du kannst diese Mitteilung nicht versenden, da Du nicht genug Mana hast."
@@ -16,9 +17,6 @@ player_use_full_hands = de \
 player_not_using = de "Das benutzt Du momentan nicht."
 player_not_holding = de "%s%s?! So etwas besitzt Du gar nicht!"
 player_regbag_empty = de "Der Reagenzien-Beutel ist leer"
-player_hit_color_red = de "~r"
-player_hit_color_blue = de "~b"
-player_hit_color_none = de ""
 player_token_reward = de "Darauf habe ich gewartet! Hier Deine Belohnung: %s%s!"
 player_token_reward_heavy = de \
    "Danke für das Artefakt. %s%s halte ich für eine angemessene Belohnung "
@@ -71,9 +69,9 @@ player_temp_safe_end = de \
    "~I~BDu spürst, dass dein Schutzengel dich wieder verlassen hat."
 player_improved = de \
    "~I~BDu hast Dich verbessert! In Zukunft wirst Du %s erfolgreicher einsetzen "
-   "können.~n"
+   "können.~n ~B[%i%%]~n"
 player_aggressor = de \
-   "Sha-Lill ist Durch Deinen ungerechtfertigten Angriff erzürnt."
+   "Shal'ille ist Durch Deinen ungerechtfertigten Angriff erzürnt."
 player_aggressor_minion = de \
    "Shal'ille runzelt die Stirn auf deinen unprovozierten Angriff auf %s%s's Kreatur."
 player_safety_caught = de \
@@ -83,6 +81,8 @@ player_safety_caught_minion = de \
    "Hey! Du hast fast %s%s's Kreatur getroffen! Gut, dass Deine Schutzvorrichtung an "
    "war!"
 player_own_minion = de "Du kannst nicht deine eigenen Kreatur angreifen!"
+player_cannot_attack_follower = de \
+   "Du kannst diese arme, schutzbedürftige Seele nicht angreifen!"
 player_safe_server = de \
    "In dieser Welt können keine anderen Spieler angegriffen werden."
 player_no_enter = de \
@@ -111,14 +111,12 @@ player_experience_lost = de "Du hast ~B~r%i~B~v XP verloren!"
 player_unbound_energy_wiped = de "Die instabile Energie, die dich umgibt, verflüchtigt "
       "sich in den Weiten des wirbelnden Äthers."
 player_unbound_energy_gained = de "Du absorbierst ~B~t%i~v~B ungebundene Energie "
-      "von Deinem gefallenen Gegner."
+      "von Deinem gefallenen Gegner. (~B~t%i ~v~Bgesamt)"
 player_unbound_energy_lost = de "Du kanalisierst ~B~t%i~v~B ungebundene Energie "
-      "um deinen Zauberspruch zu formen."
+      "um deinen Zauberspruch zu formen. Dir verbleiben ~B~t%i ~B~vungebundene Energie."
 player_unbound_energy_wasted = de "Deine Gedanken sind zu sehr mit den jüngsten "
       "Ereignissen beschäftigt, als dass du irgendeinen Nutzen aus der sich vor "
       "deinen Augen verflüchtigenden Energie ziehen könntest."
-player_health_gain_maxed = de \
-   "Deine Lebensenergie kann sich nicht weiter erhöhen."
 player_cant_hit_optout = de \
    "Du hast dich dazu entschieden nicht am Kampf gegen andere Spieler "
    "teilzunehmen."
@@ -155,7 +153,7 @@ player_was_burned = de "%s%s%ss Flammen lodern hoch und verbrennen Dich."
 player_was_shocked = de "%s%s%s grinst gehässig, als Dich sein Blitz trifft."
 player_was_frozen = de "%s%s%ss klirrende Kälte verletzt Dich."
 player_was_quaked = de "%s%s%ss Erdbeben wirft Dich herum."
-player_was_holyhit = de "%s%s%s reinigt Dich mit Sha-Lills Kraft."
+player_was_holyhit = de "%s%s%s reinigt Dich mit Shal'illes Kraft."
 player_was_unholyhit = de \
    "%s%s%s trifft Dich und Finsternis greift nach Deiner Seele."
 player_was_stung = de \
@@ -166,8 +164,6 @@ player_was_clawed = de \
    "%s%s%s reißt Dein Fleisch mit seinen scharfen Krallen in Stücke."
 player_was_punched = de "%s%s%s trifft Dich mit einem kräftigen Haken."
 player_was_kicked = de "%s%s%s tritt Dir kräftig in den Leib."
-player_out_of_room = de "%s%s ist gar nicht da."
-player_not_supported = de "Wird noch nicht unterstützt"
 player_attack_out_of_range = de \
    "%s%s ist zu weit entfernt. %s%s kann nicht treffen."
 player_attack_out_of_punch_range = de \
@@ -185,9 +181,6 @@ player_faction_princess = de "Prinzessin Kateriina zutiefst ergeben.\n"
 player_faction_rebel = de "Ein Freiheitskämpfer, der Jonas unterstützt.\n"
 player_faction_neutral = de \
    "Kein Untergebener des Hofes, aber bereits in die Geschehnisse verwickelt."
-player_nl = de "\n"
-player_sp = de " "
-player_dot = de "."
 player_citizen_barloque = de "Stammt aus Barloque"
 player_citizen_tos = de "Stammt aus Tos"
 player_citizen_cornoth = de "Stammt aus Cor Noth"
@@ -208,26 +201,6 @@ player_known_for_mastery = de "Ist weit und breit für eine Meisterschaft von "
 player_and = de " und "
 player_magics = de " Magie"
 player_skills = de "Waffenfertigkeiten"
-player_desc_guild_faction_neutral = de \
-   "%q von %s%q. Gehört nicht zum königlichen Hof, ist aber an den Intrigen "
-   "interessiert."
-player_desc_guild_faction_duke = de \
-   "%q von %s%q. Ein ergebener Diener von Herzog Akardius."
-player_desc_guild_faction_princess = de \
-   "%q von %s%q. Ein hingebungsvoller Untertan der Prinzessin."
-player_desc_guild_not_intriguing = de \
-   "%q von %s%q. Interessiert sich noch nicht für den königlichen Hof."
-player_no_guild_faction_neutral = de \
-   "Gehört keiner Gilde und keiner Fraktion an, kümmert sich aber um die "
-   "Intrigen am königlichen Hof."
-player_no_guild_faction_duke = de \
-   "Keine bekannte Gildenzugehörigkeit. Ein unterwürfiger Diener von Herzog "
-   "Akardius."
-player_no_guild_faction_princess = de \
-   "Keine Gildenzugehörigkeit. Ein treuer Diener von Prinzessin Kateriina."
-player_no_guild_not_intriguing = de \
-   "Keine Gildenzugehörigkeit. Kümmert sich nicht um die Intrigen am königlichen "
-   "Hof."
 player_donation_title = de "Nobler Spender von Meridian %q."
 player_donation_separator = de ", "
 player_dagger_shatters = de "Dein Schwarzer Dolch verwandelt sich zu Staub."
@@ -241,14 +214,11 @@ player_dead_female_name_rsc = de "Eine weibliche Leiche"
 player_token_death = de \
    "Du stirbst, bemerkst aber gerade noch, wie das Artefakt sanft aufglüht..."
 player_dance = de \
-   "Du schluckst Deinen Stolz herunter und kehrst zu dem Liedchen in Deinem "
-   "Kopf zurück."
+   "Du schluckst Deinen Stolz herunter und fängst an zu tanzen! "
 player_cant_dance = de \
-   "Du kannst nicht tanzen, da das ganze Zeug in deinen Händen deinen Style "
-   "verkrampfen lassen!"
+   "Mit dem ganzen Zeug in deinen Händen kannst du nicht tanzen. "
 player_cant_dance_resting = de \
-   "Du sitzt jetzt. Nimm diesen ganzen Kram mit dem 'zurückkehren' nicht "
-   "zu wörtlich, ok?"
+   "Du legst gerade eine Rast ein, wie sollst du denn dabei tanzen? "
 player_stop_dance = de \
    "Du kommst aus dem Takt und erwachst aus Deinem Tanzfieber."
 player_wave = de "Du winkst mit deiner Hand."
@@ -451,7 +421,7 @@ player_intrigue_mail = de \
    "zu studieren und zu bewachen.\nDer königliche Hof dient dem Land mit seinem "
    "angeeigneten Wissen, den Alltag leichter zu gestalten.\n Vor allem ist "
    "der Hof ehrlich und unparteiisch in seinen Entscheidungen - geleitet "
-   "von der Priesterin Sha-Lills. Jedoch Herzog Akardius, Prinzessin Kateriina "
+   "von der Priesterin Shal'illes. Jedoch Herzog Akardius, Prinzessin Kateriina "
    "und ihre Fraktionsanhänger versuchen den königlichen Hof auf  andere "
    "Pfade zu zwingen:\nHerzog Akardius wünscht sich vom Rat mehr Einsatz zum "
    "Vorteil des Handels und das Studium des überlieferten Wissens, während "
@@ -471,6 +441,7 @@ player_intrigue_mail = de \
    "Entscheidungen des Hofs beeinflußt - wie alle anderen auch.Lebe wohl, "
    "und vielleicht treffen  wir uns eines Tages am Hof wieder.\n-- Gerah Springer, "
    "Baron der Gemeinde Cor Noth."
+player_Debug_learnpoints = de "%i von %i Punkten verbraucht."
 player_Debug_playercanlearn = de \
    "Damit %s einen Spruch aus Zirkel %i in der Schule %s erlenen kann:~bBereits "
    "im nächsten Zitkel gelernt: ~n%i (%i von dieser Schule).~bKlugheit reduziert "
@@ -483,9 +454,6 @@ player_Debug_playercanlearn_scarcity = de \
 player_Debug_nokarma = de "%s kann %s aufgrund des Karmas nicht erreichen."
 player_Debug_noway = de \
    "Für %s ist es unmöglich, jemals den %s-Zauber zu erlernen."
-player_eavesdrop_login_str = de "~B~g[~n%s hat sich eingewählt. ~B~g]"
-player_eavesdrop_str = de "~B~g[~n%s erzählt %s, \"%q~n\"~B~g]"
-player_eavesdrop_logout_str = de "~B~g[~n%s hat das Spiel verlassen. ~B~g]"
 player_admin_added_spell = de "Zauberspruch hinzugefuegt."
 player_admin_modified_spell = de "Zauberspruch geaendert."
 player_admin_removed_spell = de "Zauberspruch entfernt."
@@ -495,8 +463,6 @@ player_admin_removed_skill = de "Fertigkeit entfernt."
 death_rift_stayed_too_long = de \
    "Nachdem du zu lange fort warst aber immer noch lebeding findest du dich "
    "selbst zurück in der Realität!"
-second_wind_finished = de \
-   "Du fühlst dich entspannter als dein Zweiter Atem dich verlässt."
 player_monster_attack_string = de "Monster Angriff"
 player_no_weapon_string = de "Keine Waffen"
 cannot_attack_ally = de \
@@ -510,7 +476,7 @@ rod_gained_charge_msg = de \
    "etwas aufgeladen wurde."
 rods_recharged_by_safe_place_msg = de \
    "Dieser sichere Ort lässt deinen Zauberstab wieder zu Kräften kommen."
-player_truced = de "Shal'ills Magie zwingt dich dazu Waffenruhe einzuhalten."
+player_truced = de "Shal'illes Magie zwingt dich dazu Waffenruhe einzuhalten."
 Jig_cannot_attack = de \
    "Es würde sich nicht richtig anfühlen anzugreifen, solange du so schön "
    "mit %s%s tanzt."
@@ -529,3 +495,31 @@ phased_player_description = de \
    "anders ist, aber sicher nicht hier."
 bad_line_of_sight = de \
    "Deine schlechte Sicht lässt einen Schlag schwieriger werden."
+player_already_leader = de \
+   "Du hast bereits einen Begleiter. Du solltest ihm mitteilen, dass sich eure ~IWege~I "
+   "wieder ~Itrennen~I sollten, bevor du dir einen anderen Begleiter zulegst."
+player_bonus_tp = de \
+   "Deine beeindruckende Leistung wird mit ~B~k%i~v~B zusätzlichen Trainingspunkten belohnt!"
+
+player_honor_gain_kill = de \
+   "Du erhältst %i Ehrenpunkte durch deinen Sieg über %s."
+player_honor_gain_assist = de \
+   "Du erhältst %i Ehrenpunkte für deinen Beitrag zu %ss Tod."
+player_honor_loss_death = de \
+   "Deine Niederlage kostet Dich %i Ehrenpunkte."
+
+player_honor_rank_1 = de "PvP Rang: General\n"
+player_honor_rank_2 = de "PvP Rang: Schwertmeister\n"
+player_honor_rank_3 = de "PvP Rang: Ritter\n"
+player_honor_rank_4 = de "PvP Rang: Knappe\n"
+player_honor_rank_5 = de "PvP Rang: Anwärter\n"
+
+player_honor_rank_1_alt = de "PvP Rang: Gevatter Tod\n"
+player_honor_rank_2_alt = de "PvP Rang: Schlächter\n"
+player_honor_rank_3_alt = de "PvP Rang: Witwenmacher\n"
+player_honor_rank_4_alt = de "PvP Rang: Messerstecher\n"
+player_honor_rank_5_alt = de "PvP Rang: Schläger\n"
+
+player_honor_title_on = de "Dein Ehren-Rang wird nun angezeigt."
+player_honor_title_off = de "Dein Ehren-Rang wird nicht mehr angezeigt."
+player_honor_title_alt = de "Dein alternativer Ehren-Rang wird nun angezeigt."

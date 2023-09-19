@@ -36,12 +36,12 @@ Bool CompareProjectiles(void *p1, void *p2)
 void ProjectileAdd(Projectile *p, ID source_obj, ID dest_obj, BYTE speed, WORD flags, WORD reserved)
 {
    float distance;
-   int dx, dy, dz;
+   float dx, dy, dz;
    room_contents_node *s, *d;
 
    // If animation off, don't bother with projectiles
    if (!config.animate)
-     return;
+      return;
 
    debug(("Adding new projectile\n"));
 
@@ -79,33 +79,36 @@ void ProjectileAdd(Projectile *p, ID source_obj, ID dest_obj, BYTE speed, WORD f
       p->motion.dest_z += d->obj.boundingHeight / (FINENESS * 2);
 #endif
 
-//   debug(("source obj = %d, x = %d, y = %d, z = %d\n", source_obj, 
-//	   p->motion.source_x, p->motion.source_y, p->motion.source_z));
-//
-//   debug(("dest obj = %d, x = %d, y = %d, z = %d\n", dest_obj, 
-//	   p->motion.dest_x, p->motion.dest_y, p->motion.dest_z));
+   //   debug(("source obj = %d, x = %d, y = %d, z = %d\n", source_obj, 
+   //	   p->motion.source_x, p->motion.source_y, p->motion.source_z));
+   //
+   //   debug(("dest obj = %d, x = %d, y = %d, z = %d\n", dest_obj, 
+   //	   p->motion.dest_x, p->motion.dest_y, p->motion.dest_z));
 
-   // See how far we should move per frame
+      // See how far we should move per frame
    dx = p->motion.dest_x - p->motion.source_x;
    dy = p->motion.dest_y - p->motion.source_y;
    dz = p->motion.dest_z - p->motion.source_z;
 
    if (speed == 0 || (dx == 0 && dy == 0 && dz == 0))
-      p->motion.increment = 1.0;
-   else 
+      p->motion.increment = p->motion.incrementstart = 1.0f;
+   else
    {
-      distance = GetLongSqrt(dx * dx + dy * dy + dz * dz) / FINENESS;
-      p->motion.increment = ((float) speed) / 1000.0 / distance;
+      distance = sqrtf(dx * dx + dy * dy + dz * dz) / FINENESS;
+      if (distance > 0.001f)
+         p->motion.increment = p->motion.incrementstart = ((float)speed) / 1000.0f / distance;
+      else
+         p->motion.increment = p->motion.incrementstart = 1.0f;
    }
 
    p->motion.x = p->motion.source_x;
    p->motion.y = p->motion.source_y;
    p->motion.z = p->motion.source_z;
 
-   p->motion.progress = 0.0;
+   p->motion.progress = 0.0f;
 
    // Set projectile angle
-   p->angle = intATan2(dy, dx) & NUMDEGREES_MASK;
+   p->angle = intATan2f(dy, dx) & NUMDEGREES_MASK;
 
    p->flags = flags;
    p->reserved = reserved;
@@ -129,18 +132,18 @@ Bool ProjectilesMove(int dt)
    l = current_room.projectiles;
    while (l != NULL)
    {
-      Projectile *p = (Projectile *) (l->data);
+      Projectile *p = (Projectile *)(l->data);
       next = l->next;
 
       if (MoveSingle(&p->motion, dt))
       {
-         current_room.projectiles = list_delete_item(current_room.projectiles, p, 
-                                                     CompareProjectiles);
+         current_room.projectiles = list_delete_item(current_room.projectiles, p,
+            CompareProjectiles);
          SafeFree(p);
       }
       else if (p->flags & PROJ_FLAG_FOLLOWGROUND)
       {
-	 p->motion.z = GetPointFloor(p->motion.x, p->motion.y);
+         p->motion.z = GetPointFloor(p->motion.x, p->motion.y);
       }
       l = next;
    }
@@ -156,8 +159,7 @@ void RadiusProjectileAdd(Projectile *p, ID source_obj, BYTE speed, WORD flags,
                          WORD reserved, BYTE range, BYTE number)
 {
    float distance, destx, desty, radangle, fRange;
-   int dx, dy, dz, destz;
-   room_contents_node *s;
+   float dx, dy, dz, destz;
    fRange = range;
    float initangle = 0.0;
 
@@ -165,7 +167,12 @@ void RadiusProjectileAdd(Projectile *p, ID source_obj, BYTE speed, WORD flags,
    if (!config.animate)
      return;
 
-   for (int i=1; i <= number; i++)
+   // Set source coordinates based on object location
+   room_contents_node *s = GetRoomObjectById(source_obj);
+   if (!s)
+      return;
+
+   for (int i = 0; i < number; ++i)
    {
       Projectile *q = (Projectile *) ZeroSafeMalloc(sizeof(Projectile));
 
@@ -173,9 +180,6 @@ void RadiusProjectileAdd(Projectile *p, ID source_obj, BYTE speed, WORD flags,
       q->translation = p->translation;
       q->animate = p->animate;
       q->dLighting = p->dLighting;
-
-      // Set source coordinates based on object location
-      s = GetRoomObjectById(source_obj);
 
       q->motion.source_x = s->motion.x;
       q->motion.source_y = s->motion.y;
@@ -190,9 +194,9 @@ else
       /* We're launching projectiles in a circle, so we need to determine
          which angle we need to shoot this projectile, and the destination. */
 
-      radangle = (initangle*3.14159)/180.0;
-      destx = s->motion.x + ((fRange*1000.0) * cos(radangle));
-      desty = s->motion.y + ((fRange*1000.0) * sin(radangle));
+      radangle = initangle * PI / 180.0f;
+      destx = s->motion.x + ((fRange * 1000.0f) * cosf(radangle));
+      desty = s->motion.y + ((fRange * 1000.0f) * sinf(radangle));
       destz = s->motion.z;
 #if 0
    destz += PlayerGetHeightOffset() / (FINENESS * 2);
@@ -208,21 +212,24 @@ else
       dz = q->motion.dest_z - q->motion.source_z;
 
       if (speed == 0 || (dx == 0 && dy == 0 && dz == 0))
-         q->motion.increment = 1.0;
+         q->motion.increment = q->motion.incrementstart = 1.0f;
       else
       {
-         distance = GetLongSqrt(dx * dx + dy * dy + dz * dz) / FINENESS;
-         q->motion.increment = ((float) speed) / 1000.0 / distance;
+         distance = sqrtf(dx * dx + dy * dy + dz * dz) / FINENESS;
+         if (distance > 0.001f)
+            q->motion.increment = q->motion.incrementstart = ((float)speed) / 1000.0f / distance;
+         else
+            q->motion.increment = q->motion.incrementstart = 1.0f;
       }
 
       q->motion.x = q->motion.source_x;
       q->motion.y = q->motion.source_y;
       q->motion.z = q->motion.source_z;
 
-      q->motion.progress = 0.0;
+      q->motion.progress = 0.0f;
 
       // Set projectile angle.
-      q->angle = intATan2(dy, dx) & NUMDEGREES_MASK;
+      q->angle = intATan2f(dy, dx) & NUMDEGREES_MASK;
 
       q->flags = flags;
       q->reserved = reserved;
@@ -230,7 +237,7 @@ else
       current_room.projectiles = list_add_item(current_room.projectiles, q);
 
       // Set next angle.
-      initangle = initangle + 360.0/number;
+      initangle += 360.0f / number;
    }
    SafeFree(p);
 }
