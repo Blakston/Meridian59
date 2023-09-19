@@ -23,8 +23,7 @@ resources:
    DetectGood_desc_rsc = \
       "Allows you to see the disgustingly pure of heart.  This spell will "
       "reveal all good people and monsters that are more good than you "
-      "are corrupted.  Requires a fairy wing to cast."
-
+      "are corrupted."
    DetectGood_on_rsc = \
       "You can now sense all things good, merely waiting to be defiled."
    DetectGood_off_rsc = \
@@ -82,7 +81,7 @@ messages:
    GetStateValue(iSpellpower=$,who=$,target=$)
    {
       // Post this so it's after the flag being applied.
-      Post(target,@ToCliRoomContents);
+      Post(target,@ToCliGoodKarma);
 
       return iSpellpower;
    }
@@ -109,7 +108,7 @@ messages:
       if Send(who,@IsLoggedOn)
       {
          // Must post this so it's after the flag being removed.
-         Post(who,@ToCliRoomContents);
+         Post(who,@ToCliGoodKarma);
       }
 
       propagate;

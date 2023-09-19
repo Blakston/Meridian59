@@ -33,8 +33,6 @@ resources:
    riijatemple_door5 = "~kThe Monk of Riija says, \"~rIt would be best if you avoided ~b`Ithat`I~r door~n~k.\""
    riijatemple_door6 = "~kThe Monk of Riija says, \"~BThat ~rdoor ~gleads ~bnowhere.  ~IThat is ~I~gnot to say ~kan empty ~rroom ~Bor ~B~ga blank wall ~rlies beyond it.  ~b`INowhere`I ~gis an infinate purgatory ~Bthat ~rswallows all that enter~n~k.\""
 
-   riijatemple_sound = down2.ogg
-
    riijaplayer_death_male_wav = malefall822m.ogg
    riijaplayer_death_female_wav = femalefall822m.ogg
 
@@ -85,50 +83,51 @@ messages:
       propagate;
    }
 
-   Teleport(what=$)
+   Teleport(what=$,mob_override=FALSE)
    {
       local iRow, iCol, oRoom;
-      
+
       if Send(what,@GetOwner) = self
       {
          // Someone is casting blink.  If on the island, blink them back to the city.
          iRow = Send(what,@GetRow);
          iCol = Send(what,@GetCol);
 
-         if ((iRow >= 4 and iCol >= 13) and (iRow <= 30 and iCol <= 44))
+         if ((iRow >= 4 AND iCol >= 13)
+            AND (iRow <= 30 AND iCol <= 44))
          {
-            oRoom = Send(SYS,@FindRoombyNum,#num=RID_KOC_NORTH);            
-            post(oRoom,@Teleport,#what=what);
-            
+            oRoom = Send(SYS,@FindRoombyNum,#num=RID_KOC_NORTH);
+            Post(oRoom,@Teleport,#what=what,#mob_override=mob_override);
+
             return TRUE;
          }
       }
-      
+
       propagate;
    }
 
    NewHold(what=$,new_row=0,new_col=0)
    {
       local iRow, iCol;
-      
+
       iRow = Send(what,@GetRow);
       iCol = Send(what,@GetCol);
-      
+
       if IsClass(what,&Player)
          AND ((New_Row >= 4 AND New_Col >= 13)
               AND (New_Row <= 30 AND New_Col <= 44))
          AND NOT (IsClass(what,&DM) AND Send(what,@PlayerIsImmortal))
       {
-         post(self,@Teleport,#what=what);
+         Post(self,@Teleport,#what=what);
       }
-      
+
       propagate;
-   } 
+   }
 
    SomethingTryGo(what = $,row = $,col = $)
    {
       if pbIllusioned
-      { 
+      {
          if row = 16 AND col = 31
          {
             Send(what,@MsgSendUser,#message_rsc=riijatemple_door1);
@@ -424,8 +423,8 @@ messages:
          Send(SYS,@UtilGotoSquare,#what=what,#where=Send(SYS,@FindRoomByNum,#num=RID_KOC_INN),
                #new_row=8,#new_col=6,#new_angle=ANGLE_NORTH);
          Send(what,@LoseHealth,#amount=(Send(what,@GetHealth)-1));
-         Send(Send(SYS,@FindSpellByNum,#num=SID_HOLD),@DoSpell,
-               #what=self,#oTarget=what,#iDuration=5000,#report=FALSE,
+         Send(Send(SYS,@FindSpellByNum,#num=SID_HOLD),@DoSpellEffects,
+               #who=self,#lTargets=[what],#iDuration=5000,#report=FALSE,
                #bAllowFreeAction=FALSE);
          Send(what,@EffectSendUserDuration,#effect=EFFECT_PAIN,#duration=2000);
          Send(what,@EffectSendUserXLat,#xlat=0);
@@ -440,11 +439,11 @@ messages:
               #where=Send(SYS,@FindRoomByNum,#num=RID_KOC_INN),
               #new_row=8,#new_col=6,#new_angle=ANGLE_NORTH);
          Send(what,@LoseHealth,#amount=(Send(what,@GetHealth)-1));
-         Send(Send(SYS,@FindSpellByNum,#num=SID_HOLD),@DoSpell,
-               #what=self,#oTarget=what,#iDuration=10000,#report=FALSE,
+         Send(Send(SYS,@FindSpellByNum,#num=SID_HOLD),@DoSpellEffects,
+               #who=self,#lTargets=[what],#iDuration=10000,#report=FALSE,
                #bAllowFreeAction=FALSE);
          
-         ptDeathMessageTimer = createtimer(self,@TimerMessage1,5000); 
+         ptDeathMessageTimer = CreateTimer(self,@TimerMessage1,5000);
       }
       
       if Send(what,@GetGender) = GENDER_MALE

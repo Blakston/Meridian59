@@ -24,6 +24,9 @@ resources:
    deadbody_player_desc_rsc = \
       "The dead body of %q, decomposing quickly in the living air of Meridian."
    deadbody_assassinated_rsc = "Here lies %q, slain by an unknown assassin."
+   deadbody_follower_rsc = \
+      "This dutiful follower has sustained grave injuries in battle and "
+      "temporarily lost consciousness."
 
 classvars:
 
@@ -32,6 +35,7 @@ classvars:
    vrNamed_Mob_Desc = deadbody_named_mob_rsc
 
    vrAssassinated_desc = deadbody_assassinated_rsc
+   vrFollower_desc = deadbody_follower_rsc
    viIndefinite = ARTICLE_A
 
 properties:
@@ -47,6 +51,7 @@ properties:
    prPlayer_name = $
    pbWas_good_player = FALSE
    pbMob = FALSE
+   pbFollower = FALSE
    pbNamedMob = FALSE
    pbAssassinated = FALSE
 
@@ -55,22 +60,24 @@ properties:
    prPlayerBodyOverlay = $
    piBodyTrans = 0
    piLegsTrans = 0
-   piGroup = 1
 
    poDearlyDeparted = $
    piTimeOfDeath = $
 
    pbResurrected = FALSE
+   poVictim = $
 
 messages:
 
    Constructor(victim = $,killer = $,oRoom = $, assassinated = FALSE,
          drawfx = 0, BodyTranslation = 0, LegsTranslation = 0,
-         PlayerBodyOverlay = $, Decomposes = TRUE)
+         PlayerBodyOverlay = $, Decomposes = TRUE, bFollower = FALSE)
    {
       vrName = Send(victim,@GetDeadName);
       vrIcon = Send(victim,@GetDeadIcon);
+      poVictim = victim;
       pbMob = IsClass(victim,&Monster);
+      pbFollower = bFollower;
       piDrawfx = drawfx;
       pbAssassinated = assassinated;
       prPlayerBodyOverlay = PlayerBodyOverlay;
@@ -94,7 +101,12 @@ messages:
          }
       }
 
-      if pbMob
+      if pbFollower
+      {
+         ptDelete = CreateTimer(self,@DeleteTimerMessage,
+            Send(SETTINGS_OBJECT,@GetFollowerReturnTime));
+      }
+      else if pbMob
       {
          ptDelete = CreateTimer(self,@DeleteTimerMessage,120000);
       }
@@ -167,8 +179,18 @@ messages:
       propagate;
    }
 
-   DeleteTimerMessage()
+   DeleteTimerMessage(timer = $)
    {
+      // In case we want to dispose of the body early.
+      if (ptDelete <> $) AND (ptDelete <> timer)
+      {
+         DeleteTimer(ptDelete);
+      }
+      else if pbFollower
+      {
+         Send(poVictim,@FollowerReturn,#oBody=self);
+      }
+
       ptDelete = $;
 
       Send(self,@Delete);
@@ -185,6 +207,13 @@ messages:
    {
       // Need to do STRING_RESOURCE for names because
       // player might not be logged in.
+      if pbFollower
+      {
+         AddPacket(4,vrFollower_desc);
+
+         return;
+      }
+
       if pbMob
       {
          if NOT pbNamedMob
@@ -225,6 +254,28 @@ messages:
    WasPlayer()
    {
       return (NOT pbMob);
+   }
+
+   WasIllusion()
+   {
+      if (poVictim <> $)
+      {
+         return Send(poVictim,@IsIllusion);
+      }
+
+      return FALSE;
+   }
+
+   GetVictimName()
+   {
+      if (poVictim <> $)
+      {
+         return Send(poVictim,@GetName);
+      }
+
+      Debug("Tried to get name from corpse with $ victim! vrName is ", vrName);
+
+      return vrName;
    }
 
    SendAnimation()
@@ -269,6 +320,13 @@ messages:
    GetTimeOfDeath()
    {
       return piTimeOfDeath;
+   }
+
+   UpdateTimeValues()
+   {
+      piTimeOfDeath = GetTime();
+
+      return;
    }
 
    // Next two messages are for portal of life.  Checks if the body was

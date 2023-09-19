@@ -32,7 +32,7 @@ classvars:
    viDefinite = ARTICLE_NONE
 
    viSkill_num = SKID_DEFAULT
-   viSchool = SKS_BRAWLING
+   viSchool = SKS_DM
 
    viskillExertion = 10
 
@@ -73,7 +73,7 @@ messages:
      return viAttack_Type;
    }
 
-   GetAttackSpell(weapon_used=$)
+   GetSpellType(weapon_used=$)
    {
      return viSpell_type;
    }

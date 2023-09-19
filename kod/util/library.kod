@@ -63,7 +63,6 @@ resources:
    faction_visit_novice = "I am sorry, but you are not yet experienced enough to be worthy of faction membership.  Please come back later."
    factionite_visit_start = "Welcome back to court, my follower.  If you see to it that I get my message, your service obligation will be complete for a time."
    neutral_visit_start = "Greetings.  If you wish to join my faction, you must demonstrate your devotion."
-   faction_too_strong = "I am sorry, but my current followers provide all the support I need.  Perhaps if you come back later, I will have need of you."
    faction_visit_wrong = "It is well known that you are a vassal of my primary opposition.  Until you change who you follow, I will not have you doing any of my errands. %s"
    faction_visit_wrong_accept = "Yet, I will accept you into my faction if you bring me a token of the Meridian Council."
    faction_visit_wrong_decline = "Currently, my followers provide all the support I need. Yet, if you return later, perhaps I will have need of you."
@@ -92,7 +91,6 @@ resources:
    LM_haz_towns = "The five towns are far away from here."
    LM_haz_help = "I'll be what help I can be, but you should really read the signs."
    LM_haz_quest = "Hmmm, I don't really need any help right now, but you know what?  The town's elder would probably have a good use for an adventurer like you!"
-   LM_haz_quest_elder = "Yes, yes!  I need adventurers to clear out the mausoleum on the south side of town!"
    LM_haz_mausoleum = "Formerly a deeply sacred place for the townsfolk, it has since been defiled by the footsteps of the dead!"
    LM_haz_mummy = "Noble ancestors or restless wanderers?  Either way, the mummies are abominations and must be destroyed!"
    LM_haz_snack_quest = "Hmmm... I've heard that Eric is always looking for edible mushrooms.  He is an excellent cook, you should try his soup!"
@@ -518,6 +516,10 @@ resources:
    LT_wryn = "Wryn's Keep"
    LT_wool = "wool"
    LT_tova = "Tova"
+   LT_brax = "brax"
+   LT_creepy = "creepy"
+   LT_strangeactivity = "strange activity"
+   LT_creature = "creature"
 
    // Former spell names, now used for mood reactions
    LT_mend = "mend"
@@ -817,6 +819,80 @@ resources:
       "Did you know that 3DO tripled the cost of Meridian subscriptions in "
       "the same week Ultima Online was released and lost 50% of their players?"
 
+   LM_tosdeath_rand1 = \
+      "I lost a lot of blood to be able to pay for this Arena but my "
+      "opponnents paid even more.  I'm here and they are not!"
+   LM_tosdeath_rand2 = \
+      "If my father knew of this place he would be even more disappointed.  "
+      "Anyone want to tell him?  Haha!"
+   LM_tosdeath_rand3 = \
+      "My father is an old fool who still is under the impression that the "
+      "world is a good place and that we can live in freedom."
+   LM_tosdeath_rand4 = \
+      "When I was a Warrior for the Ko'catan army, I found out that the "
+      "Riija Monk is a good gambling partner."
+   LM_tosdeath_rand5 = \
+      "Ko'catan the proud and honest city? Ha, if you only knew how much "
+      "corruption and evil happens there you wouldn't think so poorly of me.  "
+      "I'm a good guy compared to ... never mind."
+   LM_tosdeath_rand6 = \
+      "They told everyone I'm responsible for what happened in the jungle "
+      "but nobody knows anything about what I went through.  I was tortured "
+      "and forced to do the things she wanted me to do."
+   LM_tosdeath_rand7 = \
+      "Ko'catan is not a place I ever want to see again.  She is not "
+      "gracious to anyone if you don't do what she says.  I saw one guy who "
+      "refused ... he suffered greatly."
+   LM_tosdeath_rand8 = \
+      "The orc caves are dark and dirty.  I would rather die before seeing "
+      "that place again."
+   LM_tosdeath_rand9 = \
+      "I don't know who my mother was.  My father never wanted to tell me.  "
+      "Rumors are the only things I heard and I couldn't believe them. "
+   LM_tosdeath_rand10 = \
+      "I only did all of these things to find out more about my mother."
+   LM_tosdeath_rand11 = \
+      "I heard people like to play with each other in the proud Arena of "
+      "Kraanan?  Disgusting, it is just a playground for little kids."
+   LM_tosdeath_rand12 = \
+      "I bet you don't know anything about Cort, the Watcher from the "
+      "Arena of Kraanan?"
+   LM_tosdeath_rand13 = \
+      "You would laugh if I told you about Cort and what happened with "
+      "Skivlat yesterday. "
+   LM_tosdeath_rand14 = \
+      "Paddock is a good guy, he has nothing against me. "
+   LM_tosdeath_rand15 = \
+      "The apothecary of Tos would make a better Princess.  He will not sell "
+      "anything to me.  I think he is afraid of me."
+
+   LM_bart_necro_rand1 = \
+      "I've heard rumors of strange sounds coming from the ruins of the city "
+      "of Brax.  Tendrath would know the truth of this, were you to ask him "
+      "about this ~Istrange activity~I."
+   LM_bart_necro_rand2 = \
+      "A few adventurers were in here the other day telling tall stories "
+      "about an unnaturally large animated skeleton seen around the ruins of "
+      "Brax.  If anyone knows about this ~Icreature~I, it'd be Tendrath."
+   LM_paddock_necro_rand1 = \
+      "Johlan was here for a drink yesterday and I asked him about the rumors "
+      "of strange sounds coming from Brax.  I've never seen that man scared "
+      "but this seemed to rattle him.  Something strange is happening in "
+      "~IBrax~I and he seems to know something."
+   LM_johlan_brax_speech = \
+      "I know all about Brax, that place is ~Icreepy~I.  I was there and met "
+      "Goad.  You know Goad?"
+   LM_johlan_creepy_speech = \
+      "I've seen something unnatural.  If you want to know more about it go "
+      "and check it out by yourself."
+   LM_tendrath_strange_speech = \
+      "An unknown Necromancer has raised an evil ~Icreature~I of tremendous "
+      "power.  I fear this is merely a precursor of what is to come."
+   LM_tendrath_creature_speech = \
+      "You must banish this abomination.  Take allies with you when you face "
+      "it, and beware the wrath of the necromancer.  If you go alone you may "
+      "die and join the undead army as a slave."
+
    lib_signet_lost = \
       "You pat your pockets and check your pack, but you suddenly realize "
       "the signet ring you were carrying is gone!"
@@ -861,7 +937,6 @@ properties:
    // for the extended speech and random libs   -AJM
    piLastSpeechKey = 0
    pcLastSpeechClass = $
-   piLastSpeechTriggerNum = 0
    piLastRandomKey = 0
    pcLastRandomClass = $
    plScratchString = $
@@ -1241,7 +1316,9 @@ messages:
          [48,0,[ LIBACT_SAY, LM_haz_rand_apoth1 ]],
          [48,0,[ LIBACT_SAY, LM_haz_rand_inn1 ]],
          [48,0,[ LIBACT_SAY, LM_haz_rand_smith1 ]],
-         [48,0,[ LIBACT_SAY, LM_haz_rand_elder1 ]]
+         [48,0,[ LIBACT_SAY, LM_haz_rand_elder1 ]],
+         [48,0,[ LIBACT_SAY, LM_bart_necro_rand1 ]],
+         [48,0,[ LIBACT_SAY, LM_bart_necro_rand2 ]]
       ]],plRandomLib);
 
       plRandomLib = Cons([&RazaInnkeeper,[
@@ -1299,6 +1376,45 @@ messages:
          [48,0,[ LIBACT_SAY, LM_cormuseum_rand24 ]]
       ]],plRandomLib);
 
+      plRandomLib = Cons([&DeathArenaWatcher,[
+         [48,0,[ LIBACT_SAY, LM_tosdeath_rand1 ]],
+         [48,0,[ LIBACT_SAY, LM_tosdeath_rand2 ]],
+         [48,0,[ LIBACT_SAY, LM_tosdeath_rand3 ]],
+         [48,0,[ LIBACT_SAY, LM_tosdeath_rand4 ]],
+         [48,0,[ LIBACT_SAY, LM_tosdeath_rand5 ]],
+         [48,0,[ LIBACT_SAY, LM_tosdeath_rand6 ]],
+         [48,0,[ LIBACT_SAY, LM_tosdeath_rand7 ]],
+         [48,0,[ LIBACT_SAY, LM_tosdeath_rand8 ]],
+         [48,0,[ LIBACT_SAY, LM_tosdeath_rand9 ]],
+         [48,0,[ LIBACT_SAY, LM_tosdeath_rand10 ]],
+         [48,0,[ LIBACT_SAY, LM_tosdeath_rand11 ]],
+         [48,0,[ LIBACT_SAY, LM_tosdeath_rand12 ]],
+         [48,0,[ LIBACT_SAY, LM_tosdeath_rand13 ]],
+         [48,0,[ LIBACT_SAY, LM_tosdeath_rand14 ]],
+         [48,0,[ LIBACT_SAY, LM_tosdeath_rand15 ]]
+      ]],plRandomLib);
+
+      plRandomLib = Cons([&BarloqueBartender,[
+         [48,0,[ LIBACT_SAY, LM_bart_necro_rand1 ]],
+         [48,0,[ LIBACT_SAY, LM_bart_necro_rand2 ]]
+      ]],plRandomLib);
+
+      plRandomLib = Cons([&JasperBartender,[
+         [48,0,[ LIBACT_SAY, LM_bart_necro_rand1 ]],
+         [48,0,[ LIBACT_SAY, LM_bart_necro_rand2 ]]
+      ]],plRandomLib);
+
+      plRandomLib = Cons([&MarionBartender,[
+         [48,0,[ LIBACT_SAY, LM_bart_necro_rand1 ]],
+         [48,0,[ LIBACT_SAY, LM_bart_necro_rand2 ]]
+      ]],plRandomLib);
+
+      plRandomLib = Cons([&TosInnKeeper,[
+         [48,0,[ LIBACT_SAY, LM_bart_necro_rand1 ]],
+         [48,0,[ LIBACT_SAY, LM_bart_necro_rand2 ]],
+         [48,0,[ LIBACT_SAY, LM_paddock_necro_rand1 ]]
+      ]],plRandomLib);
+
       return;
    }
 
@@ -1350,7 +1466,6 @@ messages:
          [[LT_buy],0,[LIBACT_SAY,LM_haz_elder_buy]],
          [[LT_sell],0,[LIBACT_SAY,LM_haz_elder_sell]],
          [[LT_snack],0,[LIBACT_SAY,LM_haz_snack_none]],
-         [[LT_quest],0,[LIBACT_SAY,LM_haz_quest_elder]],
          [[LT_mausoleum],0,[LIBACT_SAY,LM_haz_mausoleum]],
          [[LT_mummy,LT_mummies],0,[LIBACT_SAY,LM_haz_mummy]],
          [[LT_eric],0,[LIBACT_SAY,LM_haz_eric]],
@@ -1425,6 +1540,12 @@ messages:
          [[LT_freebird], 0, [LIBACT_MOOD, 4], 4]
       ]], plSpeechLib);
 
+      // Tendrath
+      plSpeechLib = Cons([&HunterGhost,[
+         [[LT_strangeactivity], 0, [LIBACT_SAY, LM_tendrath_strange_speech]],
+         [[LT_creature], 0, [LIBACT_SAY, LM_tendrath_creature_speech]]
+      ]], plSpeechLib);
+
 //Tos people
 
       // Skivlat
@@ -1446,6 +1567,12 @@ messages:
          [[LT_shutup], 0, [LIBACT_MOOD, -3], 1],
          [[LT_mend], 0, [LIBACT_MOOD, -1], 2],
          [[LT_mending], 0, [LIBACT_MOOD, -1], 3]
+      ]], plSpeechLib);
+
+      // Johlan
+      plSpeechLib = Cons([&DeathArenaWatcher,[
+         [[LT_brax], 0, [LIBACT_SAY, LM_johlan_brax_speech]],
+         [[LT_creepy], 0, [LIBACT_SAY, LM_johlan_creepy_speech]]
       ]], plSpeechLib);
 
 //Kocatan people
@@ -1833,7 +1960,6 @@ messages:
          [[LT_quest],0,[LIBACT_SAY,LM_haz_quest]]
       ]],plSpeechLib);
       plSpeechLib = Cons([&RazaElder,[
-         [[LT_quest],0,[LIBACT_SAY,LM_haz_quest_elder]],
          [[LT_mausoleum],0,[LIBACT_SAY,LM_haz_mausoleum]],
          [[LT_mummy],0,[LIBACT_SAY,LM_haz_mummy]]
       ]],plSpeechLib);
@@ -2130,9 +2256,11 @@ messages:
       return;
    }
 
-   PersonalityClash(mob=$,libvec=0)
+   PersonalityClash(target=$,mob=$,libvec=0)
    "Determine if the mob has a conflicting personality to a library entry"
    {
+      local iRoomNum, iMasked;
+
       if mob = $ OR libvec=0 {return FALSE;}
 
       if ((libvec & LIBRES_FEMALE_ONLY) <> 0)
@@ -2162,6 +2290,31 @@ messages:
       if ((libvec & LIBRES_MOOD_MASK) <> 0)
       {
          if (((libvec & LIBRES_MOOD_MASK) & Send(mob,@GetMoodFlags)) = 0)
+         {
+            return TRUE;
+         }
+      }
+
+      if ((libvec & LIBRES_HT_MASK) <> 0
+         AND target <> $)
+      {
+         iRoomNum = Send(target,@GetHomeRoom);
+         iMasked = libvec & LIBRES_HT_MASK;
+
+         if (((iMasked & LIBRES_HT_MARION) = LIBRES_HT_MARION AND iRoomNum <> RID_MAR_INN)
+            OR ((iMasked & LIBRES_HT_RAZA) = LIBRES_HT_RAZA AND iRoomNum <> RID_RAZA_INN)
+            OR ((iMasked & LIBRES_HT_JASPER) = LIBRES_HT_JASPER AND iRoomNum <> RID_JAS_INN)
+            OR ((iMasked & LIBRES_HT_CORNOTH) = LIBRES_HT_CORNOTH AND iRoomNum <> RID_COR_INN)
+            OR ((iMasked & LIBRES_HT_BARLOQUE) = LIBRES_HT_BARLOQUE AND iRoomNum <> RID_BAR_INN)
+            OR ((iMasked & LIBRES_HT_TOS) = LIBRES_HT_TOS AND iRoomNum <> RID_TOS_INN)
+            OR ((iMasked & LIBRES_HT_KOCATAN) = LIBRES_HT_KOCATAN AND iRoomNum <> RID_KOC_INN)
+            OR ((iMasked & LIBRES_HT_NOTMARION) = LIBRES_HT_NOTMARION AND iRoomNum = RID_MAR_INN)
+            OR ((iMasked & LIBRES_HT_NOTRAZA) = LIBRES_HT_NOTRAZA AND iRoomNum = RID_RAZA_INN)
+            OR ((iMasked & LIBRES_HT_NOTJASPER) = LIBRES_HT_NOTJASPER AND iRoomNum = RID_JAS_INN)
+            OR ((iMasked & LIBRES_HT_NOTCORNOTH) = LIBRES_HT_NOTCORNOTH AND iRoomNum = RID_COR_INN)
+            OR ((iMasked & LIBRES_HT_NOTBARLOQUE) = LIBRES_HT_NOTBARLOQUE AND iRoomNum = RID_BAR_INN)
+            OR ((iMasked & LIBRES_HT_NOTTOS) = LIBRES_HT_NOTTOS AND iRoomNum = RID_TOS_INN)
+            OR ((iMasked & LIBRES_HT_NOTKOCATAN) = LIBRES_HT_NOTKOCATAN AND iRoomNum = RID_KOC_INN))
          {
             return TRUE;
          }
@@ -2315,7 +2468,7 @@ messages:
       return;
    }
 
-   SearchSpeechLib(mob = $, string = $)
+   SearchSpeechLib(target = $, mob = $, string = $)
    "Given the mob and the string, return an action. Any of the superclasses"
    "of the mob can provide the action, and when two or more actions apply,"
    "a random one is chosen."
@@ -2349,7 +2502,8 @@ messages:
 
          foreach j in Nth(i,2)
          {
-            if Send(self,@PersonalityClash,#mob=mob,#libvec=Nth(j,2))
+            if Send(self,@PersonalityClash,#target=target,
+                  #mob=mob,#libvec=Nth(j,2))
             {
                continue;
             }
@@ -3458,6 +3612,7 @@ messages:
                OR IsClass(i,&JasperTown)
                OR IsClass(i,&MarionTown)
                OR IsClass(i,&TosTown)
+               OR IsClass(i,&RazaTown)
                OR IsClass(i,&Wanderer))
          {
             if Random(0,iCnt)=0

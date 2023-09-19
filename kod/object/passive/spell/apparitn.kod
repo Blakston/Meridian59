@@ -26,14 +26,9 @@ resources:
    summonapparition_icon_rsc = iapparit.bgf
    summonapparition_desc_rsc = \
       "Summons an illusory creature to attack your enemies.  "
-      "The creature does good damage, but is easily banished.  "
-      "Requires web moss and rainbow fern to cast."
-
+      "The creature does good damage, but is easily banished."
    summonapparition_cast_rsc = \
       "You smile as %s%s raises from the ground next to %s%s!"
-   summonapparition_failed_rsc = \
-      "There is already too much summoning magic focused here to summon an "
-      "apparition."
    summonapp_toomany_rsc = \
       "There are too many monsters present here to risk summoning another."
    summonapparition_failed_inanimate = \
@@ -64,7 +59,6 @@ classvars:
 
 properties:
 
-
 messages:
 
    ResetReagents()
@@ -81,7 +75,7 @@ messages:
       return 1;
    }
 
-   CanPayCosts(who=$,lTargets=$)
+   CanPayCosts(who=$,lTargets=$,bItemCast = FALSE)
    {
       local oRoom, oTarget;
 
@@ -111,10 +105,21 @@ messages:
          return FALSE;
       }
 
+      if oTarget = who
+      {
+         if NOT bItemCast
+         {
+            Send(who,@MsgSendUser,#message_rsc=spell_no_self_target,
+                  #parm1=vrName);
+         }
+
+         return FALSE;
+      }
+
       propagate;
    }
 
-   CastSpell(who=$,lTargets=$,iSpellpower=$)
+   DoSpellEffects(who=$,lTargets=$,iSpellpower=$)
    {
       local oApparition, oRoom, iRow, iCol, iFine_Row, iFine_Col,
             lMonsList, i, oTarget;
@@ -123,7 +128,7 @@ messages:
       {
          Send(who,@MsgSendUser,#message_rsc=apparition_fizzle);
 
-         return;
+         return FALSE;
       }
 
       oTarget = First(lTargets);
@@ -161,11 +166,17 @@ messages:
       iFine_Row = Send(oTarget,@GetFineRow);
       iFine_Col = Send(oTarget,@GetFineCol);
 
-      Send(oRoom,@NewHold,#what=oApparition,#new_row=iRow,#new_col=iCol,
-            #fine_row=iFine_Row,#fine_col=iFine_Col);
+      // Attempt to place randomly near, otherwise place on the target.
+      if NOT (Send(SYS,@UtilGoRandomNear,#what=oApparition,#where=oRoom,
+                  #new_row=iRow,#new_col=iCol,
+                  #fine_row=iFine_Row,#fine_col=iFine_Col))
+      {
+         Send(oRoom,@NewHold,#what=oApparition,#new_row=iRow,#new_col=iCol,
+               #fine_row=iFine_Row,#fine_col=iFine_Col);
+      }
 
-      Send(oApparition,@TargetSwitch,#what=oTarget,#iHatred=1000);
-      Send(oApparition,@EnterStateAttack);
+      Post(oApparition,@TargetSwitch,#what=oTarget,#iHatred=1000);
+      Post(oApparition,@EnterStateEngage,#target=oTarget,#actnow=TRUE);
 
       Send(who,@MsgSendUser,#message_rsc=summonapparition_cast_rsc,
             #parm1=Send(oApparition,@GetIndef),
@@ -173,19 +184,18 @@ messages:
             #parm3=Send(oTarget,@GetIndef),
             #parm4=Send(oTarget,@GetName));
 
-      i = Send(oApparition,@ReturnMaxHitPoints);
-      i = i / APPARITION_FRACTION;
+      i = Send(oApparition,@GetMaxHealth) / APPARITION_FRACTION;
 
       Send(oApparition,@SetMaxHitPoints,#amount=i);
 
-      propagate;
+      return TRUE;
    }
 
    CreateRandomMonster(spellpower=$)
    {
       local i;
 
-      i = random(1,60);
+      i = Random(1,60);
 
       if spellpower < 35
       {

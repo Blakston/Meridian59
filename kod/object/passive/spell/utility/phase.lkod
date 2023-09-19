@@ -5,20 +5,12 @@ Phase_desc_rsc = de \
    "aus der Realität ausgestiegen, führt der Ausstieg zu körperlichen und "
    "geistigen Schäden sowie einem möglichen Verlust von mitgeführten Gegenständen. "
    "Die Zeit wird so lange mitgerechnet, bis du einen sicheren Ort betrittst."
-Phase_no_danger = de "Der magische Schutz verhindert deinen Ausstieg."
 Phase_penned = de \
    "Dein Bezug zur Realität reißt ab und du wirst mit Gewalt an einen sicheren "
-   "Ort gebracht um von dem sicheren Ort wieder in die reale Welt zu gehen!"
+   "Ort gebracht um von dort wieder in die reale Welt zu gehen!"
 Phase_penned_others = de \
-   "%s's Bezug zur Realität reißt %s$0ab, und wird mit Gewalt an einen sicheren Ort "
-   "gebracht!"
-Phase_penned_others_item = de \
-   "Der gewalttätige Ausstieg hat dafür gesorgt, dass %s%s aus dem Inventar "
-   "von %s gerissen wurde."
-Phase_lost_one_item = de \
-   "Du hast %s Skill Punkte, %s Zauber Punkte, und %s%s verloren."
-Phase_lost_two_items = de \
-   "Du hast %s Skill Punkte, %s Zauber Punkte, %s%s, und %s%s verloren."
+   "%s's Bezug zur Realität reißt %s$0ab, der Körper wird mit Gewalt an einen sicheren "
+   "Ort gebracht!"
 penalties_inflicted_one_item = de \
    "Diese qualvolle Erfahrung kostet Dich %i XP, einen Gegenstand, %i%% in "
    "Zaubersprüchen und %i%% in Waffenfertigkeiten."
@@ -34,7 +26,7 @@ no_phasing_in_arena_msg = de \
 no_phasing_while_specator_msg = de \
    "Wenn du versuchst auszusteigen, während du schon ausgestiegen bist, wirst "
    "du explodieren!"
-phase_time_low = de "Du hast das Gefühl du verlierst deinen halt..."
+phase_time_low = de "Du hast das Gefühl du verlierst deinen Halt..."
 phase_time_gone = de "Du verlierst deinen Bezug zur realen Existenz!"
 no_phasing_here_override_msg = de \
    "Eine mystische Präsenz hinder dich daran hier auszusteigen."

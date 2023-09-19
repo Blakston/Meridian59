@@ -71,13 +71,13 @@ messages:
       propagate;
    }
 
-   CastSpell(who = $, lTargets = $)
+   DoSpellEffects(who = $, lTargets = $)
    {
       local cClass, oItem, lLocal_list;
 
       if (who = $)
       {
-         return;
+         return FALSE;
       }
 
       foreach oItem in Send(who,@GetHolderPassive)
@@ -102,7 +102,7 @@ messages:
             lLocal_list = Cons([GetClass(oItem),Send(oItem,@GetHits)],
                                  lLocal_list);
          }
-         else if IsClass(oItem,&NumberItem)
+         else if Send(oItem,@IsStackable)
          {
             lLocal_list = Cons([GetClass(oItem),Send(oItem,@GetNumber)],
                                  lLocal_list);
@@ -116,7 +116,7 @@ messages:
       Send(who,@SetLoadoutList,#set_list=lLocal_list);
       Send(who,@MsgSendUser,#message_rsc=Set_cast);
 
-      propagate;
+      return TRUE;
    }
 
 end

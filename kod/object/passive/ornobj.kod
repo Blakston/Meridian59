@@ -654,9 +654,6 @@ resources:
    oo_modrelic_name = "model relic of Qor"
    oo_modrelic_icon = scepter.bgf
    oo_modrelic_desc = "A plaque below the model reads:\nThe purpose of this unholy artifact has been lost."
-   oo_modmananode_name = "miniature mana node"
-   oo_modmananode_icon = modnode.bgf
-   oo_modmananode_desc = "A plaque below the model reads:\nA mage can acquire greater power by melding with this influx of mystical energy."
 
    oo_modgrapes_name = "platter of wax grapes"
    oo_modgrapes_icon = grapepla.bgf
@@ -894,6 +891,43 @@ resources:
       "A plaque below the model reads:\n"
       "This regal woman bears a small resemblance to Princess Kateriina."
 
+   oo_shrubee1_name = "shrub"
+   oo_shrubee1_icon = shrubee1.bgf
+   oo_shrubee1_desc = "This is a woody plant with multiple permanent stems branching near the ground."
+
+   oo_shrubee2_name = "shrub"
+   oo_shrubee2_icon = shrubee2.bgf
+   oo_shrubee2_desc = "This is a woody plant with multiple permanent stems branching near the ground."
+
+   oo_midtree1_name = "tree"
+   oo_midtree1_icon = midtree1.bgf
+   oo_midtree1_desc = "These trees offer cool shade and beautiful scenery."
+
+   oo_midtree2_name = "tree"
+   oo_midtree2_icon = midtree2.bgf
+   oo_midtree2_desc = "These trees offer cool shade and beautiful scenery."
+
+   oo_midtree3_name = "tree"
+   oo_midtree3_icon = midtree3.bgf
+   oo_midtree3_desc = "These trees offer cool shade and beautiful scenery."
+
+   oo_midtree4_name = "tree"
+   oo_midtree4_icon = midtree4.bgf
+   oo_midtree4_desc = "These trees offer cool shade and beautiful scenery."
+
+   oo_talltree1_name = "tree"
+   oo_talltree1_icon = talltree1.bgf
+   oo_talltree1_desc = "A fresh scent hangs in the air around this tall tree."
+
+   oo_talltree2_name = "tree"
+   oo_talltree2_icon = talltree2.bgf
+   oo_talltree2_desc = "A fresh scent hangs in the air around this tall tree."
+
+   oo_talltree3_name = "tree"
+   oo_talltree3_icon = talltree3.bgf
+   oo_talltree3_desc = "A fresh scent hangs in the air around this tall tree."
+
+
 classvars:
 
 properties:
@@ -993,7 +1027,10 @@ messages:
    SetHanging(value = TRUE)
    {
       pbHanging = value;
-      if poOwner { send(poOwner,@SomethingChanged,#what=self); }
+      if poOwner
+      {
+         Send(poOwner,@SomethingChangedFlags,#what=self);
+      }
 
       return;
    }
@@ -1001,7 +1038,10 @@ messages:
    SetNoMoveOn(value = TRUE)
    {
       pbNoMoveOn = value;
-      if poOwner { send(poOwner,@SomethingChanged,#what=self); }
+      if poOwner
+      {
+         Send(poOwner,@SomethingChangedFlags,#what=self);
+      }
 
       return;
    }
@@ -2022,8 +2062,53 @@ messages:
          vrIcon = oo_hist_hermit_icon;
          vrDesc = oo_hist_hermit_desc;
          break;
+      case OO_SHRUBEE1:
+         vrName = oo_shrubee1_name;
+         vrIcon = oo_shrubee1_icon;
+         vrDesc = oo_shrubee1_desc;
+         break;
+      case OO_SHRUBEE2:
+         vrName = oo_shrubee2_name;
+         vrIcon = oo_shrubee2_icon;
+         vrDesc = oo_shrubee2_desc;
+         break;
+      case OO_MIDTREE1:
+         vrName = oo_midtree1_name;
+         vrIcon = oo_midtree1_icon;
+         vrDesc = oo_midtree1_desc;
+         break;
+      case OO_MIDTREE2:
+         vrName = oo_midtree2_name;
+         vrIcon = oo_midtree2_icon;
+         vrDesc = oo_midtree2_desc;
+         break;
+      case OO_MIDTREE3:
+         vrName = oo_midtree3_name;
+         vrIcon = oo_midtree3_icon;
+         vrDesc = oo_midtree3_desc;
+         break;
+      case OO_MIDTREE4:
+         vrName = oo_midtree4_name;
+         vrIcon = oo_midtree4_icon;
+         vrDesc = oo_midtree4_desc;
+         break;
+      case OO_TALLTREE1:
+         vrName = oo_talltree1_name;
+         vrIcon = oo_talltree1_icon;
+         vrDesc = oo_talltree1_desc;
+         break;
+      case OO_TALLTREE2:
+         vrName = oo_talltree2_name;
+         vrIcon = oo_talltree2_icon;
+         vrDesc = oo_talltree2_desc;
+         break;
+      case OO_TALLTREE3:
+         vrName = oo_talltree3_name;
+         vrIcon = oo_talltree3_icon;
+         vrDesc = oo_talltree3_desc;
+         break;
       }
-
+  
       /// tell the room we changed, unless this is in constructor
       if (NOT const) AND poOwner <> $
       {
@@ -2051,7 +2136,7 @@ messages:
 
    SendLookAnimation()
    {
-      send(self,@SendAnimation);      
+      Send(self,@SendAnimation);
 
       return;
    }
@@ -2060,11 +2145,7 @@ messages:
    {
       if pbFlicker
       {
-         AddPacket(2,LIGHT_FLAG_ON);
-         // intensity out of 255
-         AddPacket(1,20);
-         // Color.  Most ornamental objects are fire-type objects.
-         AddPacket(2,LIGHT_FIRE);
+         AddPacket(2,LIGHT_FLAG_ON, 1,20, 2,LIGHT_FIRE);
 
          return;
       }

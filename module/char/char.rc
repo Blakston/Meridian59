@@ -31,7 +31,7 @@ LANGUAGE LANG_GERMAN, SUBLANG_NEUTRAL
 STYLE DS_SETFONT | WS_CHILD
 FONT 8, "MS Sans Serif", 0, 0, 0x0
 BEGIN
-    LTEXT           "Wähle die Eigenschaftswerte Deines Charakters wohl überlegt, denn sie sind permanent.",-1,6,4,280,8
+    LTEXT           "Wähle die Eigenschaften wohl überlegt! Diese zu ändern ist möglich, aber schwierig.",-1,6,4,269,8
     LTEXT           "Stärke",-1,38,27,23,8
     CONTROL         "",1021,"BlakGraph",WS_TABSTOP | 0xb,65,24,102,14
     LTEXT           "Klugheit",-1,33,45,28,8
@@ -50,7 +50,7 @@ BEGIN
     PUSHBUTTON      "&Krieger",1011,43,164,50,11
     LTEXT           "Konzentriere dich auf Waffenfertigkeiten und Kraanan.",-1,98,164,190,8
     PUSHBUTTON      "&Hybrid",1012,43,178,50,11
-    LTEXT           "Lerne Magie und Waffenfertigkeiten.",-1,98,178,190,8
+    LTEXT           "Lerne Waffenfertigkeiten und zwei Zauberschulen.",-1,98,178,190,8
     PUSHBUTTON      "&Favoriten",1027,43,192,50,11
     LTEXT           "Von Spielern eingereichte und empfohlene Werte.",-1,98,192,190,8
     LTEXT           "Eigenschaftspunkte übrig:",-1,8,215,83,8
@@ -60,7 +60,7 @@ BEGIN
     LTEXT           "Deine Stärke bestimmt den Schaden, den Du anrichtest und Deine Tragkraft.",-1,175,23,132,18
     LTEXT           "Kluge Charaktere können schneller ihre Fähigkeiten ausbauen und neue erlernen.",-1,175,42,134,17
     LTEXT           "Eine hohe Konstitution wirkt sich positiv auf die Lebenskraft und Ausdauer aus.",-1,175,61,136,17
-    LTEXT           "Krieger benötigen eine hohe Gewandheit um ihre Waffen wirkungsvoll einzusetzen.",-1,175,80,134,8
+    LTEXT           "Krieger benötigen eine hohe Gewandheit um ihre Waffen wirkungsvoll einzusetzen.",-1,175,80,134,17
     LTEXT           "Eine hohe Magie wirkt sich positiv auf die Zauberkraft und die Zaubersprüche aus.",-1,175,99,132,17
     LTEXT           "Beeinflußt die Trefferwarscheinlichkeit von Zaubersprüchen und Waffen.",-1,175,119,134,18
 END
@@ -102,7 +102,7 @@ END
 STYLE DS_SETFONT | DS_3DLOOK | WS_CHILD
 FONT 8, "MS Sans Serif", 0, 0, 0x0
 BEGIN
-    LTEXT           "Wähle die Zaubersprüche, die Dein Charakter von Anfang an haben soll.",-1,13,4,230,8
+    LTEXT           "Wähle die Fertigkeiten, die Dein Charakter von Anfang an beherrschen soll.",-1,13,4,250,8
     LTEXT           "Verfügbare Fertigkeiten:",-1,13,19,76,8
     LISTBOX         1035,13,31,105,161,LBS_SORT | LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
     PUSHBUTTON      "Hinzufügen >>",1034,124,31,67,14
@@ -112,6 +112,7 @@ BEGIN
     LTEXT           "",1039,149,184,20,8
     LTEXT           "Ausgewählte Fertigkeiten:",-1,195,19,82,8
     LISTBOX         1036,195,31,105,161,LBS_SORT | LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
+    CTEXT           "Fertigkeiten des zweiten Ranges erfordern mindestens zwei Fertigkeiten des ersten Ranges.",IDC_STATIC,0,199,316,8
     LTEXT           "Fertigkeitspunkte übrig:",-1,13,215,74,8
     CONTROL         "",1028,"BlakGraph",0x8,94,214,98,11
     PUSHBUTTON      "&<< Zurück",1008,222,214,42,14
@@ -132,7 +133,8 @@ BEGIN
     LISTBOX         1030,195,31,105,161,LBS_SORT | LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
     LTEXT           "Kosten:",-1,125,184,25,8
     LTEXT           "",1039,149,184,20,8
-    LTEXT           "Sha Lill und Qor sollte man nicht zusammen lernen.",-1,13,199,160,8
+    CTEXT           "Zauber des zweiten Ranges erfordern mindestens zwei Zauber des zugehörigen ersten Ranges.",IDC_STATIC,0,194,316,8
+    CTEXT           "Die Zauber der Erzfeinde Shal'ille (gut) und Qor (böse) können nicht gleichzeitig erlent werden.",IDC_STATIC,0,202,316,8
     LTEXT           "Fertigkeitspunkte übrig:",-1,13,215,74,8
     CONTROL         "",1028,"BlakGraph",0x8,93,214,98,11
     PUSHBUTTON      "&<< Zurück",1008,220,214,40,12
@@ -148,7 +150,7 @@ BEGIN
     DEFPUSHBUTTON   "Bestätigen",1,167,9,39,14,WS_GROUP
     PUSHBUTTON      "Ausloggen",2,167,27,39,14,WS_GROUP
     EDITTEXT        1041,10,74,195,101,ES_MULTILINE | ES_AUTOVSCROLL | ES_READONLY | WS_VSCROLL
-    CONTROL         "Aktuelle Meldung",-1,"Static",SS_SIMPLE | WS_GROUP,9,64,56,8
+    CONTROL         "Aktuelle Meldung:",-1,"Static",SS_SIMPLE | WS_GROUP,9,64,70,8
     CONTROL         "",1042,"SysAnimate32",ACS_CENTER | ACS_AUTOPLAY | WS_TABSTOP,10,182,195,32
     CONTROL         "",1044,"SysAnimate32",ACS_CENTER | ACS_AUTOPLAY | WS_TABSTOP,10,217,195,32
 END
@@ -157,8 +159,8 @@ END
 STYLE DS_SETFONT | DS_3DLOOK | WS_CHILD
 FONT 8, "MS Sans Serif", 0, 0, 0x0
 BEGIN
-    LTEXT           "Hier muß der Name Deines Charakters eingegeben werden.",-1,2,2,190,8
-    LTEXT           "Erlaubt sind Groß-, Kleinbuchstaben, Zahlen und Leerzeichen!",-1,2,12,196,8,SS_NOPREFIX
+    LTEXT           "Bitte den Name Deines Charakters eingegeben. Er muss 3 bis 30 Buchstaben lang sein.",-1,2,2,312,8
+    LTEXT           "Erlaubt sind Groß-, Kleinbuchstaben, Zahlen, Leerzeichen oder: !@$^&*+=:()[]{}<>;/?|",-1,2,12,312,8,SS_NOPREFIX
     EDITTEXT        1101,2,26,108,16,ES_AUTOHSCROLL
     LTEXT           "Hier kannst Du eine Beschreibung Deines Charakters eingeben. Du kannst sie noch ändern:",-1,2,52,292,8
     EDITTEXT        1000,2,64,302,138,ES_MULTILINE | ES_WANTRETURN | WS_VSCROLL
@@ -179,17 +181,26 @@ BEGIN
     4                       "Dieser Name ist bereits vergeben."
     5                       "Du hast noch einige Eigenschaftspunkte übrig. Willst Du diese wirklich verfallen lassen?"
     6                       "Du hast noch einige Fertigkeitspunkte übrig. Willst Du diese wirklich verfallen lassen?"
-END
+    7                       "Charaktererstellung aufgrund eines unspezifizierten Fehlers fehlgeschlagen, bitte versuche es erneut und kontaktiere einen Administrator im Spiel oder auf meridiannext.com/phpbb3 wenn Du nicht in der Lage bist, einen Charakter zu erstellen."
+    8                       "Charakterplatz bereits belegt! Bitte versuche einen anderen Charakterplatz und kontaktiere einen Administrator im Spiel oder auf meridiannext.com/phpbb3."
+    9                       "Charakternamen müssen zwischen 3 und 30 Zeichen lang sein."
+    10                      "Ungültiges Symbol im Namen verwendet."
 
-STRINGTABLE
-BEGIN
+    11                      "Namen von Monstern aus Meridian 59 sind nicht erlaubt."
+    12                      "Namen von NPCs aus Meridian 59 sind nicht erlaubt."
+    13                      "Charaktere dürfen nicht nach bestehenden Gilden benannt werden."
+    14                      "Beleidigende oder anstößige Sprache ist in Charakternamen nicht erlaubt."
+    15                      "Bitte wähle einen anderen Namen - dieser könnte im Spiel für Verwirrung sorgen."
     16                      "Name"
     17                      "Zaubersprüche"
     18                      "Fertigkeiten"
     19                      "Aussehen"
     20                      "Eigenschaften"
     21                      "Erschaffe Deinen Charakter"
-    22                      "<unbekannt>"
+    22                      "< Neuer Charakter >"
+    23                      "Bitte wähle einen anderen Namen - dieser gehört einem ehemaligen Entwickler oder Mitglied des Meridian 59 Teams und ist für sie für die Zukunft reserviert."
+    24                      "Charakterbeschreibungen dürfen nicht mehr als 1000 Zeichen enthalten."
+    25                      "Du musst ein Geschlecht für deinen Charakter wählen."
 END
 
 STRINGTABLE
@@ -263,7 +274,8 @@ BEGIN
     LISTBOX         IDC_SPELLIST2,195,31,105,161,LBS_SORT | LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
     LTEXT           "Cost:",IDC_STATIC,125,184,17,8
     LTEXT           "",IDC_COST2,149,184,20,8
-    LTEXT           "Shal'ille (good) and Qor (evil) spells cannot be chosen together.",IDC_STATIC,57,199,201,8
+    CTEXT           "To unlock a school's second rank of spells, choose two or more spells of the first rank.",IDC_STATIC,0,194,316,8
+    CTEXT           "The schools of Shal'ille (good) and Qor (evil) are natural antagonists and, thus, mutually exclusive.",IDC_STATIC,0,202,316,8
     LTEXT           "Spell/skill points left",IDC_STATIC,13,215,63,8
     CONTROL         "",IDC_POINTSLEFT,"BlakGraph",0x8,87,214,98,11
     PUSHBUTTON      "&<< Prev",IDC_PREVIOUS_PAGE,231,214,34,12
@@ -284,6 +296,7 @@ BEGIN
     LTEXT           "",IDC_COST2,149,184,20,8
     LTEXT           "Skills you have:",IDC_STATIC,195,19,53,8
     LISTBOX         IDC_SKILLIST2,195,31,105,161,LBS_SORT | LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
+    CTEXT           "To unlock the second rank of skills, choose two or more skills of the first rank.",IDC_STATIC,0,199,316,8
     LTEXT           "Spell/skill points left",IDC_STATIC,13,215,63,8
     CONTROL         "",IDC_POINTSLEFT,"BlakGraph",0x8,87,214,98,11
     PUSHBUTTON      "&<< Prev",IDC_PREVIOUS_PAGE,231,214,34,12
@@ -463,7 +476,23 @@ STRINGTABLE
 BEGIN
     IDS_DELETECHAR          "Are you sure you want to delete %s?"
     IDS_BADCHARNAME         "Your name must be at least %d characters long,\nand must consist of legal characters."
+
+    IDS_GENERICERROR        "Character creation failed due to an unspecified error, please try again and contact an admin in-game or at meridiannext.com/phpbb3 if you are unable to create a character."
+    IDS_NOTFIRSTTIME        "Character slot already in use! Please try a different character slot, and contact an admin in-game or at meridiannext.com/phpbb3."
+    IDS_NAMETOOLONG         "Character names must be between 3 and 30 characters long."
+    IDS_NAMEBADCHARS        "Invalid character used in name."
     IDS_CHARNAMEUSED        "Your character name is already taken by someone else."
+    IDS_NOMOBNAME           "You may not pick the name of a Meridian 59 monster."
+    IDS_NONPCNAME           "You may not pick the name of a Meridian 59 NPC."
+    IDS_NOGUILDNAME         "You may not name your character after an existing Meridian 59 Guild."
+    IDS_NOBADWORDS          "You may not use offensive language in your character name."
+    IDS_NOCONFUSINGNAME     "Please pick another name - this one could cause confusion in-game."
+    IDS_RETIREDNAME         "Please pick another name, this one belongs to a former Meridian 59 developer or staff member and is reserved for their future use."
+    IDS_DESCTOOLONG         "Player descriptions cannot be more than 1000 characters."
+    IDS_INVALIDGENDER       "You must select either male or female when creating your character."
+    
+    
+    
     IDS_STATPOINTSLEFT      "You have some points remaining to allocate to statistics; are you sure you want to discard these points?"
     IDS_SPELLPOINTSLEFT     "You have some points remaining to allocate to spells and skills; are you sure you want to discard these points?"
 END
@@ -488,14 +517,14 @@ BEGIN
     IDS_RIIJA               "Riija"
     IDS_JALA                "Jala"
     IDS_DMSCHOOL            "DMSchool"
-    IDS_FENCING             "Weaponcraft"
-    IDS_BRAWLING            "Brawling"
-    IDS_THIEVERY            "Thievery"
+    IDS_WEAPONCRAFT         "Weaponcraft"
+    IDS_DMSKILL             "DMSkill"
+    IDS_ROGUE               "Roguery"
 END
 
 STRINGTABLE
 BEGIN
-    IDS_FAVORITES           "http://wiki.openmeridian.org/index.php/Character_Builds_Document"
+    IDS_FAVORITES           "http://wiki.meridian59.de/index.php?show=artikel&o_id=8&h_id=21&h_name=Tips%20n%20Tricks&s_meng=5&s_id=&b_id=117&start=5&betreff=Character-Stats"
 END
 
 #endif    // English (United States) resources

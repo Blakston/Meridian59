@@ -35,7 +35,7 @@ classvars:
    vrHit = attack_spell_hit_rsc
 
    viAttack_type = 0
-   viAttack_spell = ATCK_SPELL_ALL
+   viSpell_type = SPL_TYPE_ALL
 
    // In seconds, since it works off GetTime(),
    viPostCast_time = 2
@@ -158,13 +158,13 @@ messages:
       return 1;
    }
 
-   CastSpell(who=$,lTargets=$,iSpellPower=0,bItemCast=FALSE)
+   DoSpellEffects(who=$,lTargets=$,iSpellPower=0,iPowerLevel=100,bItemCast=FALSE)
    {
       local i, iDamage, iManaFocus, iTemp, oRoom;
 
       if (NOT (viHarmful OR viOutlaw))
       {
-         propagate;
+         return TRUE;
       }
 
       // Rooms can cast earthquake, so check if we have a room for 'who'
@@ -178,6 +178,12 @@ messages:
       }
 
       iDamage = Random(piDamageMin*100, piDamageMax*100);
+
+      if IsClass(who,&Monster)
+      {
+         iDamage = iDamage * iPowerLevel / 100;
+         iDamage = (iDamage * (50 + (iSpellPower / 2))) / SPELLPOWER_MAXIMUM;
+      }
 
       if IsClass(who,&Player)
       {
@@ -247,7 +253,7 @@ messages:
                continue;
             }
             iDamage = Send(i,@AssessDamage,#what=who,#damage=iDamage,
-                           #atype=viAttack_type,#aspell=Send(self,@GetAttackSpell),
+                           #atype=viAttack_type,#stype=Send(self,@GetSpellType),
                            #absolute=pbAbsolute,#precision=TRUE);
             if iDamage = $
             {
@@ -273,7 +279,7 @@ messages:
          else
          {
             iDamage = Send(i,@AssessDamage,#what=who,#damage=iDamage,
-                        #atype=viAttack_type,#aspell=Send(self,@GetAttackSpell),
+                        #atype=viAttack_type,#stype=Send(self,@GetSpellType),
                         #absolute=pbAbsolute,#precision=TRUE);
          }
 
@@ -285,15 +291,21 @@ messages:
             {
                Send(who,@KilledSomething,#what=i,#use_weapon=self);
             }
-         }
 
-         Send(oRoom,@SomethingAttacked,#what=who,#victim=i,#use_weapon=self);
+            //Tell everyone else about the transgression...
+            Send(oRoom,@SomethingAttacked,#what=who,#victim=i,#use_weapon=self);
+         }
 
          Send(self,@DoSideEffect,#who=who,#victim=i,#damage=iDamage);
       }
 
-      // This used to not propagate, but as of July 2014 it does. No bugs yet noted.
-      propagate;
+      return TRUE;
+   }
+
+   // Damaging spells already cause aggression by dealing damage.
+   CausesAggression()
+   {
+      return FALSE;
    }
 
    DamageFactors(damage=0,who=$)
@@ -310,9 +322,9 @@ messages:
       return iDamage;
    }
 
-   GetAttackSpell()
+   GetSpellType()
    {
-      return viAttack_spell;
+      return viSpell_type;
    }
 
    GetAttackType()
@@ -342,7 +354,7 @@ messages:
       {
          // Apply the spell damage to the caster. Kill them if necessary.
          iFinalDamage = Send(who,@AssessDamage,#what=who,#damage=iDamage,#atype=0,
-                           #aspell=viAttack_spell,#report=TRUE,#precision=TRUE);
+                           #stype=viSpell_type,#report=TRUE,#precision=TRUE);
 
          if iFinalDamage = $
          {
@@ -363,6 +375,16 @@ messages:
    ComputeDamage(who=$,target=$,iDamage=$)
    {
       return;
+   }
+
+   GetSquaredRange()
+   {
+      if piRange = $
+      {
+         return MAX_KOD_INT;
+      }
+
+      return piRange*piRange;
    }
 
 end

@@ -170,6 +170,8 @@ EXPORTS
 	GetTextInputHeight
 	GetAmount
 	ToolbarGetUnionRect
+	Timebox_GetRect
+	Fpsbox_GetRect
 	Lagbox_GetRect
 	EditBoxGetArea
 	UserMouselookIsEnabled
@@ -199,6 +201,7 @@ EXPORTS
 	BitmapsFree
 	CreateMemBitmap
 	DibOpenBitmapFile
+	DibOpenBitmapResource
 	CreateMemBitmapFromBmp
 
 ; Animation

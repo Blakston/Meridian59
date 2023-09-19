@@ -36,6 +36,9 @@ static ChildPlacement desc_controls[] = {
 	{ IDC_URLBUTTON,   RDI_BOTTOM },
 	{ IDC_URL,         RDI_BOTTOM },
 	{ IDC_APPLY,       RDI_BOTTOM },
+	{ IDC_BUY,         RDI_BOTTOM },
+	{ IDC_OFFER,       RDI_BOTTOM },
+	{ IDC_QUEST,       RDI_BOTTOM },
 	{ 0,               0 },   // Must end this way
 };
 
@@ -232,6 +235,28 @@ BOOL CALLBACK DescDialogProc(HWND hDlg, UINT message, UINT wParam, LONG lParam)
 		SetTextColor(hdc,GetPlayerNameColor(info->obj,info->name));
 		ReleaseDC(hDlg,hdc);
 		
+      // Spell description specific stuff.
+      if (info->schoolname != NULL)
+      {
+         SetDlgItemText(hDlg, IDC_DESCSCHOOLNAME, info->schoolname);
+         SetWindowFont(GetDlgItem(hDlg, IDC_DESCSCHOOLNAME), GetFont(FONT_ABILITY_INFO), FALSE);
+      }
+      if (info->level != NULL)
+      {
+         SetDlgItemText(hDlg, IDC_DESCSPELLLEVEL, info->level);
+         SetWindowFont(GetDlgItem(hDlg, IDC_DESCSPELLLEVEL), GetFont(FONT_ABILITY_INFO), FALSE);
+      }
+      if (info->mana != NULL)
+      {
+         SetDlgItemText(hDlg, IDC_DESCMANACOST, info->mana);
+         SetWindowFont(GetDlgItem(hDlg, IDC_DESCMANACOST), GetFont(FONT_ABILITY_INFO), FALSE);
+      }
+      if (info->vigor != NULL)
+      {
+         SetDlgItemText(hDlg, IDC_DESCVIGORCOST, info->vigor);
+         SetWindowFont(GetDlgItem(hDlg, IDC_DESCVIGORCOST), GetFont(FONT_ABILITY_INFO), FALSE);
+      }
+
 		// Item Description.
 		hFont = GetFont(FONT_EDIT);
 		SetWindowFont(hFixed, hFont, FALSE);
@@ -339,6 +364,12 @@ BOOL CALLBACK DescDialogProc(HWND hDlg, UINT message, UINT wParam, LONG lParam)
 			DestroyWindow(GetDlgItem(hDlg, IDC_ACTIVATE));
 		if (!(desc_flags & DESC_APPLY))
 			DestroyWindow(GetDlgItem(hDlg, IDC_APPLY));
+      if (!(desc_flags & DESC_BUY))
+         DestroyWindow(GetDlgItem(hDlg, IDC_BUY));
+      if (!(desc_flags & DESC_OFFER))
+         DestroyWindow(GetDlgItem(hDlg, IDC_OFFER));
+      if (!(desc_flags & DESC_QUEST))
+         DestroyWindow(GetDlgItem(hDlg, IDC_QUEST));
 		
 		SetLookPageButtons(hDlg, info);
 #if 0
@@ -488,6 +519,21 @@ BOOL CALLBACK DescDialogProc(HWND hDlg, UINT message, UINT wParam, LONG lParam)
 			   hURL = GetDlgItem(hDlg, IDC_URL);
 			   Edit_GetText(hURL, url, MAX_URL);
 			   WebLaunchBrowser(url);
+			   return TRUE;
+
+		   case IDC_QUEST:
+			   RequestNPCQuests(info->obj->id);
+			   EndDialog(hDlg, 0);
+			   return TRUE;
+
+		   case IDC_BUY:
+			   RequestBuy(info->obj->id);
+			   EndDialog(hDlg, 0);
+			   return TRUE;
+
+		   case IDC_OFFER:
+			   EndDialog(hDlg, 0);
+			   UserMakeOffer();
 			   return TRUE;
 			   
 		   case IDOK:
@@ -660,7 +706,8 @@ void SetDescParams(HWND hParent, int flags)
 *   extra_string and url are used only in player descriptions.
 */
 void DisplayDescription(object_node *obj, BYTE flags, char *description, 
-                        char *extra_string, char *url)
+                        char *extra_string, char *url, char *schoolname,
+                        char *level, char *mana, char *vigor)
 {
 	DescDialogStruct info;
 	int template_id;
@@ -675,12 +722,26 @@ void DisplayDescription(object_node *obj, BYTE flags, char *description,
 	info.obj          = obj;
 	info.flags        = flags;
 	info.name         = LookupNameRsc(obj->name_res);
+	info.schoolname   = schoolname;
+	info.level        = level;
+	info.mana         = mana;
+	info.vigor        = vigor;
 	info.description  = description;
 	info.fixed_string = extra_string;
 	info.url          = url;
 	
-	// Different dialog for players
-	template_id = (obj->flags & OF_PLAYER) ? IDD_DESCPLAYER : IDD_DESC;
+   // Different dialog for players and spells/skills.
+   if (schoolname != NULL)
+   {
+      if (mana != NULL)
+         template_id = IDD_DESCSPELL;
+      else
+         template_id = IDD_DESCSKILL;
+   }
+   else if (obj->flags & OF_PLAYER)
+      template_id = IDD_DESCPLAYER;
+   else
+      template_id = IDD_DESC;
 	
 	DialogBoxParam(hInst, MAKEINTRESOURCE(template_id), hDescParent,
                  DescDialogProc, (LPARAM) &info);
@@ -697,6 +758,7 @@ void DisplayDescription(object_node *obj, BYTE flags, char *description,
 void AbortGameDialogs(void)
 {
    AbortBuyDialog();
+   AbortQuestDialog();
    if (hDescDialog != NULL)
       SendMessage(hDescDialog, WM_COMMAND, IDCANCEL, 0);
    if (hAmountDialog != NULL)

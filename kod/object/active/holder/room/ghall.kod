@@ -34,9 +34,6 @@ resources:
 
    include ghall.lkod
 
-   guildhall_hotplate_firstpass = "Player passed first check."
-   guildhall_hotplate = "Player just hit hotplate #%i."
-   guildhall_entered_legally = "Guild hall just entered legally."
    guildhall_muffled = "You hear muffled conversation."
    guildhall_cant_flip = \
       "Nothing you do seems to make this device do anything."
@@ -86,9 +83,8 @@ resources:
    guildhall_new_occupants = "~B%s has been rented to new owners."
    guildhall_someone_rented = "Someone has already rented this guild hall."
 
-   guildhall_newsball = "news"
    guildhall_newsdesc = "This is the latest guild news."
-   
+
    cannot_conveyance_msg = \
       "The guild hall's innate defenses prevent you from casting conveyance!"
 
@@ -139,6 +135,8 @@ classvars:
    // For guildhalls with the chest in the foyer, this will be TRUE.
    // Default FALSE.
    vbChestInFoyer = FALSE
+
+   vbAccessibleForFollowers = FALSE
 
 properties:
 
@@ -282,7 +280,7 @@ messages:
    NewHold(what=$)
    "Don't let anyone log in anyplace but the foyer!"
    {
-      If IsClass(what,&Player)
+      if IsClass(what,&Player)
       {
          // Post a message to be sure that it does this after
          // the guy's stats are correctly set.
@@ -297,8 +295,20 @@ messages:
       propagate;
    }
 
+   SomethingPhasedIn(what=$)
+   {
+      Post(self,@ValidEntry,#what=what);
+
+      propagate;
+   }
+
    ValidEntry(what=$)
    {
+      if (Send(what,@GetOwner) <> self)
+      {
+         return;
+      }
+
       // If they can't open the door, make sure they're outside the foyer
       if NOT Send(self,@CanEnter,#who=what)
       {
@@ -896,9 +906,26 @@ messages:
    ReqSomethingAttack(what = $,victim = $,use_weapon = $,stroke_obj = $)
    "No one may attack through the door if it's closed."
    {
-      if (what = $) or (victim = $)
+      if (what = $) OR (victim = $)
       {
          propagate;
+      }
+
+      // InFoyer will return FALSE if the user isn't in the room, but trying
+      // to attack (room enchantment, minions). This leads to a match for
+      // InFoyer for attacker and victim, so attacks must require both
+      // combatants to be in the guild hall.
+      if (Send(what,@GetOwner) <> Send(victim,@GetOwner))
+      {
+         if (Send(self,@InFoyer,#who=victim))
+         {
+            // Fine if victim is in the foyer (and therefore attacker is
+            // outside hall). This way hall foyers can't be used as an escape
+            // from ET damage.
+            propagate;
+         }
+
+         return FALSE;
       }
 
       if Send(self,@InFoyer,#who=what) <> Send(self,@InFoyer,#who=victim)
@@ -1257,7 +1284,7 @@ messages:
       return;
     }
 
-   Teleport(what=$,foyer=FALSE)
+   Teleport(what = $, foyer = FALSE, mob_override = FALSE)
    "Admin supported.\n"
    "For guild halls - if you're in the guild hall, use secondary blink "
    "coordinates."
@@ -1276,7 +1303,8 @@ messages:
       if viInner_teleport_row <> $ AND viInner_Teleport_col <> $
       {
          Send(SYS,@UtilGoNearSquare,#what=what,#where=self,
-               #new_row=viInner_teleport_row,#new_col=viInner_teleport_col);
+               #new_row=viInner_teleport_row,#new_col=viInner_teleport_col,
+               #mob_override=mob_override);
 
          return TRUE;
       }

@@ -28,8 +28,7 @@ resources:
    web_stick3 = "Is there something stuck to your boot or are you stuck to IT?"
    web_stick5 = "You find yourself helplessly stuck to the spider web!"
 
-   web_dissipates = \
-      "A piece of the web withers and disappears before your eyes."
+   web_dissipates = "A piece of the web withers and disappears before your eyes."
 
    web_stick_snd = frying.ogg
 
@@ -48,50 +47,28 @@ classvars:
 
    vbPeriodic = FALSE
 
+   // Time between checks for effect.
+   viEffectInterval = 10000
+
    // Webs are dangeous, they can affect the caster.
    vbCanAffectCaster = TRUE
 
 properties:
 
    piMaxHoldTime = 0
-   plExcludedMonsters = $
 
 messages:
-   
-   Constructor(caster = $, duration = 75, MaxHoldTime = 0)
-   {
-      piMaxHoldTime = MaxHoldTime;
 
-      // A list of monsters not affected by webbing
-      // Includes: Spiders, Bosses, Fliers, Xeos, and Revenants
-      plExcludedMonsters = [ &Spider, &SpiderBaby, &SpiderQueen, &DeathSpider,
-                             &Lich, &LupoggKing, &Yeti, &Ghost,
-                             &DragonFly, &DragonFlyQueen, &EvilFairy, &Fairy,
-                             &DarkAngel, &Kriipa, &XeoAir, &XeoFire,
-                             &Revenant, &Elemental
-                           ];
-     
+   Constructor(seed=$)
+   {
+      piMaxHoldTime = Nth(seed,2)*50;
+
       propagate;
-   }
-
-   GetDuration(duration = 0)
-   {
-      local iDuration;
-
-      iDuration = Random(duration-20,duration+20);
-      iDuration = iDuration * 1000;
-      iDuration = bound(iDuration,20000,150000);
-
-      return iDuration;
    }
 
    SomethingMoved(what = $,new_row = $,new_col = $)
    {
-      local cWhatClass;
-
-      cWhatClass = GetClass(what);
-
-      if FindListElem(plExcludedMonsters,cWhatClass) <> 0
+      if NOT Send(what,@CanBeWebbed)
       {
          return;
       }
@@ -115,8 +92,8 @@ messages:
 
       if piMaxHoldTime > 0
       {
-         iHoldTime = Random(piMaxHoldTime - 2,piMaxHoldTime);
-         iHoldTime = bound(iHoldTime,1,$);
+         iHoldTime = Random(piMaxHoldTime - 2000,piMaxHoldTime);
+         iHoldTime = bound(iHoldTime,1000,$);
 
          if IsClass(what,&Monster)
          {
@@ -126,13 +103,11 @@ messages:
 
       if iHoldTime > 0
       {
-         Send(oSpell,@DoHold,#what=poCaster,#oTarget=what,
-               #iDurationSecs=iHoldTime,#report=FALSE);
-         Send(poOwner,@SomethingAttacked,#what=poCaster,#victim=what,
-               #use_weapon=self,#stroke_obj=self);
+         Send(oSpell,@DoHold,#what=poCaster,#oTarget=what,#duration=iHoldTime,
+              #report=FALSE);
       }
 
-      if isClass(what,&User)
+      if IsClass(what,&User)
       {
          if iHoldTime = 0
          {
@@ -143,28 +118,21 @@ messages:
             // Duration greater than 0
             Send(what,@WaveSendUser,#wave_rsc=web_stick_snd);
 
-            if iHoldTime < 2
+            if iHoldTime < 2000
             {
                rMessage = web_stick1;
             }
+            else if iHoldTime < 3000
+            {
+               rMessage = web_stick2;
+            }
+            else if iHoldTime < 4000
+            {
+               rMessage = web_stick3;
+            }
             else
             {
-
-               if iHoldTime < 3
-               {
-                  rMessage = web_stick2;
-               }
-               else
-               {
-                  if iHoldTime < 4
-                  {
-                     rMessage = web_stick3;
-                  }
-                  else
-                  {
-                     rMessage = web_stick5;
-                  }
-               }
+               rMessage = web_stick5;
             }
          }
 
@@ -179,7 +147,6 @@ messages:
 
       propagate;
    }
-
 
 end
 ////////////////////////////////////////////////////////////////////////////////

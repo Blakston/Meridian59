@@ -23,14 +23,11 @@ resources:
    shadowform_desc_rsc = \
      "Transforms the target into a silhouette of their former self, "
      "perfect for skulking in darker locales and making them more difficult "
-     "to hit.  Requires three rainbow ferns to cast."
+     "to hit."
    shadowform_enchantment_rsc = \
       "\n\nYour current %s enchantments adds %i defense against monsters "
       "here.  Against a player of average light level, it will add %i defense."
-   shadowform_already_enchanted = \
-      "You already have shadow form."
-   shadowform_already_affected = \
-      "The shadows refuse to hide what you wish."
+   shadowform_already_affected = "The shadows refuse to hide what you wish."
 
    shadowform_on = "You melt into your shadow."
    shadowform_off = "You fade back to your own colors."
@@ -42,6 +39,8 @@ classvars:
    vrName = shadowform_name_rsc
    vrIcon = shadowform_icon_rsc
    vrDesc = shadowform_desc_rsc
+
+   vrEnchantment_On = shadowform_on
 
    viSpell_num = SID_SHADOW_FORM
    viSpell_level = 1
@@ -85,30 +84,31 @@ messages:
          return FALSE;
       }
 
-      // Check for lighting effect already applied
-      if oTarget <> who
+      iDrawfX = Send(oTarget,@GetDrawingEffects);
+
+      // Can't apply over greyscale (secondtranslation).
+      if ((iDrawFX & DRAWFX_SECONDTRANS) = DRAWFX_SECONDTRANS)
       {
-         iDrawfX = Send(oTarget,@GetDrawingEffects);
+         Send(who,@MsgSendUser,#message_rsc=shadowform_already_affected);
 
-         if (iDrawFX & DRAWFX_BLACK) = DRAWFX_BLACK
-            OR (iDrawFX & DRAWFX_SECONDTRANS) = DRAWFX_SECONDTRANS
-         {
-             Send(who,@MsgSendUser,#message_rsc=shadowform_already_affected);
+         return FALSE;
+      }
 
-             return FALSE;
-         }
+      // Check for lighting effect already applied
+      if (oTarget <> who
+         AND (iDrawFX & DRAWFX_BLACK) = DRAWFX_BLACK)
+      {
+         Send(who,@MsgSendUser,#message_rsc=shadowform_already_affected);
+
+         return FALSE;
       }
 
       propagate;
    }
 
-   GetDuration(who=$,iSpellPower=0)
+   GetDuration(iSpellPower=0)
    {
-      local iTime;
-
-      iTime = 60000 + (iSpellPower * 3000);
-
-      return iTime;
+      return 60000 + (iSpellPower * 3000);
    }
 
    SetSpellPlayerFlag(who=$)
@@ -155,7 +155,7 @@ messages:
          // enchanted, too.
          if IsClass(what,&Player)
          {
-            iLight += Send(what,@GetPlayerLightLevel);
+            iLight += Send(what,@GetLightLevel);
          }
       }
 

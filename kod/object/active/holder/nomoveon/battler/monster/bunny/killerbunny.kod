@@ -38,9 +38,8 @@ classvars:
    vrDead_name = killerbunny_dead_name_rsc
 
    viSpeed = SPEED_AVERAGE
-   viAttack_type = ATCK_WEAP_SLASH
-   viDefault_behavior = AI_FIGHT_AGGRESSIVE |  AI_FIGHT_WIZARD_KILLER \
-      | AI_FIGHT_HYPERAGGRESSIVE
+   viAttack_type = ATK_TYPE_SLASH
+   viDefault_behavior = AI_FIGHT_AGGRESSIVE | AI_FIGHT_HYPERAGGRESSIVE
 
    viDifficulty = 6
    viVisionDistance = 20
@@ -48,6 +47,10 @@ classvars:
    viKarma = 0
    viCashmin = 500
    viCashmax = 1200
+
+   viBleedChance = 15
+   viBleedStrength = 2000
+   viBleedDuration = 5000
 
 properties:
 
@@ -57,8 +60,8 @@ messages:
 
    Constructed()
    {
-      plResistances = [ [-ATCK_SPELL_UNHOLY, 50 ],
-                        [-ATCK_SPELL_HOLY, -25 ] ];
+      plResistances = [ [-SPL_TYPE_UNHOLY, 50 ],
+                        [-SPL_TYPE_HOLY, -25 ] ];
 
       propagate;
    }

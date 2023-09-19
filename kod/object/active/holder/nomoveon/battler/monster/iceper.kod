@@ -51,14 +51,14 @@ classvars:
 
    viTreasure_type = TID_NONE
    viSpeed = SPEED_AVERAGE
-   viAttack_type = ATCK_WEAP_THRUST
-   viAttack_spell = ATCK_SPELL_COLD
+   viAttack_type = ATK_TYPE_THRUST
+   viSpell_type = SPL_TYPE_COLD
    viAttributes = 0
    viLevel = 75
    viDifficulty = 5
    viVisionDistance = 10
    // Attack range of 192, or 3 row/col.
-   viAttackRange = 192
+   viMeleeRange = 192
    viKarma = -70
    viCashmin = 200
    viCashmax = 450
@@ -66,6 +66,16 @@ classvars:
    vrSound_miss = iceperson_sound_miss
    vrSound_aware = iceperson_sound_aware
    vrSound_death = iceperson_sound_death
+
+   viBleedChance = 15
+   viBleedStrength = 800
+   viBleedDuration = 8000
+
+   vbCanPoison = FALSE
+   vbCanBleed = FALSE
+   vbCanSiphon = FALSE
+   vbCanFatigue = FALSE
+   vbCanBurn = FALSE
 
 properties:
 
@@ -76,7 +86,7 @@ messages:
 
    Constructed()
    {
-      plResistances = [ [-ATCK_SPELL_FIRE, -99 ],[ -ATCK_SPELL_COLD, 99 ]];
+      plResistances = [ [-SPL_TYPE_FIRE, -99 ],[ -SPL_TYPE_COLD, 99 ]];
 
       propagate;
    }
@@ -90,22 +100,6 @@ messages:
       }
 
       return (viDifficulty*10)/2;
-   }
-
-   MonsterAttack(what = $)
-   {
-      Send(self,@DoSlash);
-
-      return;
-   }
-
-   DoSlash()
-   {
-      piAnimation = ANIM_ATTACK;
-      Send(poOwner,@SomethingChanged,#what=self);
-      piAnimation = ANIM_NONE;
-
-      return;
    }
 
    SendMoveOverlays()
@@ -169,12 +163,12 @@ messages:
 
       iGroup = 1;
 
-      if piHit_points < (200*viLevel/3)
+      if piHealth < (200*viLevel/3)
       {
          iGroup = 2;
       }
 
-      if piHit_points < (100*viLevel/3)
+      if piHealth < (100*viLevel/3)
       {
          iGroup = 3;
       }
@@ -188,6 +182,12 @@ messages:
    {
       return FALSE;
    }
+   
+   IsArenaMonster()
+   {
+      return FALSE;
+   }
+
 
 end
 ////////////////////////////////////////////////////////////////////////////////

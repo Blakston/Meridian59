@@ -47,11 +47,16 @@ classvars:
    viCashmax = 400
    viTreasure_type = TID_TOUGH
    viSpeed = SPEED_AVERAGE
-   viAttack_type = ATCK_WEAP_THRUST
+   viAttack_type = ATK_TYPE_THRUST
    viAttributes = 0
    viLevel = 75
    viDifficulty = 5
    viVisionDistance = 10
+   viSocial = 1
+   vbCanPoison = FALSE
+   vbCanBleed = FALSE
+   vbCanSiphon = FALSE
+   vbCanFatigue = FALSE
    viKarma = -50
    vbIsUndead = TRUE
    viDefault_behavior = AI_FIGHT_AGGRESSIVE | AI_FIGHT_SWITCHALOT \
@@ -62,6 +67,13 @@ classvars:
    vrSound_death = skeleton_sound_death
 
    vrHeadIcon = skeleton_head
+
+   viBleedChance = 10
+   viBleedStrength = 1000
+   viBleedDuration = 7000
+
+   // Undead, doesn't even have eyeballs.
+   viNightVision = 255
 
 properties:
 
@@ -82,14 +94,14 @@ messages:
 
    SetResistances()
    {
-      plResistances = [ [ATCK_WEAP_PIERCE, 70 ],
-                        [ATCK_WEAP_THRUST, 20 ],
-                        [-ATCK_SPELL_UNHOLY, 70 ],
-                        [-ATCK_SPELL_SHOCK, 70 ],
-                        [-ATCK_SPELL_COLD, 70 ],
-                        [-ATCK_SPELL_FIRE, -10 ],
-                        [-ATCK_SPELL_HOLY, -20 ],
-                        [ATCK_WEAP_BLUDGEON, -20 ]
+      plResistances = [ [ATK_TYPE_PIERCE, 70 ],
+                        [ATK_TYPE_THRUST, 20 ],
+                        [-SPL_TYPE_UNHOLY, 70 ],
+                        [-SPL_TYPE_SHOCK, 70 ],
+                        [-SPL_TYPE_COLD, 70 ],
+                        [-SPL_TYPE_FIRE, -10 ],
+                        [-SPL_TYPE_HOLY, -20 ],
+                        [ATK_TYPE_BLUDGEON, -20 ]
                       ];
 
       return;
@@ -104,22 +116,6 @@ messages:
       }
 
       return (viDifficulty*10)/2;
-   }
-
-   MonsterAttack(what = $)
-   {
-      Send(self,@DoSlash);
-
-      return;
-   }
-
-   DoSlash()
-   {
-      piAnimation = ANIM_ATTACK;
-      Send(poOwner,@SomethingChanged,#what=self);
-      piAnimation = ANIM_NONE;
-
-      return;
    }
 
    SendMoveAnimation()
@@ -195,6 +191,16 @@ messages:
       }
 
       return oBody;
+   }
+
+   IsAlliedClass(what=$)
+   {
+      if Send(what,@IsUndead)
+      {
+         return TRUE;
+      }
+
+      propagate;
    }
 
 end

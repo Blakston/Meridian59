@@ -43,7 +43,7 @@ classvars:
    viIndefinite = ARTICLE_NONE
    viDefinite = ARTICLE_NONE
 
-   viSchool = SKS_FENCING
+   viSchool = SKS_WEAPONCRAFT
    viSkill_Num = SKID_FIRE
    viSkill_level = 4 
    viChance_to_increase = 50
@@ -65,23 +65,30 @@ messages:
    // Finds ammo and uses it if not used.
    FindLikelyAmmo(who=$,report=FALSE)
    {
-      local oWeapon, oLikelyAmmo, oAmmo, cAmmoType, iAmmoValue, i;
+      local oWeapon, oLikelyAmmo, iAmmoType, iAmmoValue, i;
 
       oWeapon = Send(who,@LookupPlayerWeapon);
       if oWeapon = $
       {
-         if report { Send(who,@MsgSendUser,#message_rsc=fire_need_weapon); }
+         if report
+         {
+            Send(who,@MsgSendUser,#message_rsc=fire_need_weapon);
+         }
+
          return $;
       }
-      if not IsClass(oWeapon,&RangedWeapon)
+
+      if (NOT IsClass(oWeapon,&RangedWeapon))
       {
-         if report { Send(who,@MsgSendUser,#message_rsc=fire_only_missile_weapon); }
+         if report
+         {
+            Send(who,@MsgSendUser,#message_rsc=fire_only_missile_weapon);
+         }
+
          return $;
       }
 
-      cAmmoType = Send(oWeapon,@GetAmmoType);
-
-      oLikelyAmmo = $;
+      iAmmoType = Send(oWeapon,@GetAmmoType);
 
       foreach i in Send(who,@GetPlayerUsing)
       {
@@ -101,7 +108,7 @@ messages:
          foreach i in Send(who,@GetHolderPassive)
          {
             if (Send(i,@GetItemUseType) = ITEM_USE_QUIVER)
-               AND (Send(i,@GetAmmoType) = cAmmoType)
+               AND (Send(i,@GetAmmoType) = iAmmoType)
                AND ((Send(i,@GetValue)/Send(i,@GetNumber)) < iAmmoValue)
             {
                oLikelyAmmo = i;
@@ -125,15 +132,7 @@ messages:
 
    CanPayCosts(who=$,oTarget=$)
    {
-      local oAmmo;
-
-      oAmmo = Send(self,@FindLikelyAmmo,#who=who,#report=TRUE);
-      if oAmmo <> $
-      {
-         return TRUE;
-      }
-
-      return FALSE;
+      return Send(self,@FindLikelyAmmo,#who=who,#report=TRUE) <> $;
    }
 
    GetRequisiteStat(who=$)
@@ -150,16 +149,17 @@ messages:
       if oAmmo = $
       {
          Send(who,@MsgSendUser,#message_rsc=fire_no_ammo);
+
          return;
       }
 
       Send(who,@MsgSendUser,#message_rsc=fire_new_ammo,
-        #parm1=Send(oAmmo,@GetName));
+            #parm1=Send(oAmmo,@GetName));
 
-      Send(Send(who,@GetOwner),@SomethingShot,#who=who,
-        #target=Send(who,@GetKillTarget), #projectile=oAmmo);
+      Send(oRoom,@SomethingShot,#who=who,#target=Send(who,@GetKillTarget),
+            #projectile=oAmmo,#flags=PROJ_FLAG_LIGHT_SOURCE);
 
-      if Send(oRoom,@NoReagents)=FALSE
+      if (NOT Send(oRoom,@NoReagents))
       {
          Send(oAmmo,@SubtractNumber,#number=1);
       }

@@ -52,7 +52,7 @@ resources:
       "converging toward you. This place will grow progressively more "
       "dangerous as time goes on. Fortunately, you can sense that there is no "
       "Underworld here. Death will mean nothing for you in this realm.\n"
-      "Say \"leave survival\" to exit the arena."
+      "Say \"~Bleave survival~B\" to exit the arena."
    survivalroom_solo_starttime = "~BThe attacks will begin in %i seconds."
    next_level_in_seconds = \
       "~BYou have defeated wave number %i. The next arrives in %i seconds."
@@ -898,7 +898,7 @@ messages:
                      if oTarget <> $
                      {
                         Send(oMonster,@TargetSwitch,#what=oTarget,#iHatred=100);
-                        Send(oMonster,@EnterStateChase,#target=oTarget,
+                        Send(oMonster,@EnterStateEngage,#target=oTarget,
                               #actnow=TRUE);
                      }
                   }
@@ -979,7 +979,7 @@ messages:
                   }
                }
                Send(each_obj,@TargetSwitch,#what=oTarget,#iHatred=100);
-               Send(each_obj,@EnterStateChase,#target=oTarget,#actnow=True);
+               Send(each_obj,@EnterStateEngage,#target=oTarget,#actnow=True);
             }
          }
 
@@ -1009,7 +1009,7 @@ messages:
                }
 
                Send(each_obj,@TargetSwitch,#what=oTarget,#iHatred=100);
-               Send(each_obj,@EnterStateChase,#target=oTarget,#actnow=True);
+               Send(each_obj,@EnterStateEngage,#target=oTarget,#actnow=True);
             }
          }
       }
@@ -1023,6 +1023,13 @@ messages:
 
       if IsClass(what,&User)
       {
+         // Ignore hidden DMs.
+         if (IsClass(what,&DM)
+            AND Send(what,@IsDMStealthed))
+         {
+            propagate;
+         }
+
          foreach i in plCrashProtection
          {
             if what = First(i)
@@ -1109,7 +1116,7 @@ messages:
             if Random(1,5) = 1
             {
                Post(what,@TargetSwitch,#what=oTarget,#iHatred=100);
-               Post(what,@EnterStateChase,#target=oTarget,
+               Post(what,@EnterStateEngage,#target=oTarget,
                      #actnow=TRUE);
             }
          }
@@ -1118,7 +1125,7 @@ messages:
             // Public arenas get full aggro. Post these so they
             // run after mob is set up in room.
             Post(what,@TargetSwitch,#what=oTarget,#iHatred=100);
-            Post(what,@EnterStateChase,#target=oTarget,#actnow=TRUE);
+            Post(what,@EnterStateEngage,#target=oTarget,#actnow=TRUE);
          }
 
          if ptWallBlitzTimer = $
@@ -1156,7 +1163,7 @@ messages:
                continue;
             }
             Send(oMonster,@TargetSwitch,#what=who,#iHatred=100);
-            Send(oMonster,@EnterStateChase,#target=who,#actnow=True);
+            Send(oMonster,@EnterStateEngage,#target=who,#actnow=True);
 
             return;
          }
@@ -1185,7 +1192,7 @@ messages:
             AND Random(1,5) = 1
          {
             Send(First(i),@TargetSwitch,#what=who,#iHatred=100);
-            Send(First(i),@EnterStateChase,#target=who,#actnow=True);
+            Send(First(i),@EnterStateEngage,#target=who,#actnow=True);
 
             if ++iCount >= 5
             {
@@ -1492,6 +1499,14 @@ messages:
    BootUser(who=$,inform=TRUE,booting_all=FALSE)
    {
       local oRoom, i, p, crashprot;
+
+      // Toggle inform if stealthed DM leaving.
+      if (inform
+         AND (IsClass(who,&DM)
+            AND Send(who,@IsDMStealthed)))
+      {
+         inform = FALSE;
+      }
 
       // Take this person out of the crash protection list if they're there.
       foreach crashprot in plCrashProtection

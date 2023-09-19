@@ -2,13 +2,6 @@ name_TosArena = de "Die Arena von Kraanan"
 TosArena_no_offer = de \
    "Der Meister der Arena sagt, \"Zuschauer und Teilnehmer dürfen während "
    "der Kämpfe keine Gegenstände austauschen.\""
-TosArena_no_attack = de \
-   "Du darfst hier nicht kämpfen, wenn Du kein Teilnehmer bist."
-TosArena_no_spell = de \
-   "Nur teilnehmende Kämpfer dürfen hier Zaubersprüche aussprechen."
-TosArena_no_rescue = de "Du kannst Dich nicht in Sicherheit bringen."
-TosArena_no_target = de "Das ist sehr unverschämt von Dir!"
-TosArena_between_bouts = de "Kein Unfug zwischen den Kampfrunden!"
 TosArena_cant_go = de \
    "Der Meister der Arena sagt, \"Ihr könnt nicht gehen! Ihr seid einer der "
    "Kämpfer!\""
@@ -44,13 +37,13 @@ TosArena_rules = de "Regeln"
 TosArena_rules_rules = de \
    "* Zwischen den Kämpfen kann jeder Teilnehmer den Kampfstil durch Eingabe "
    "eines neuen Stils ändern. Allerdings müssen alle Kämpfe entschieden sein "
-   "und alle amtierenden Champions müssen ihre Titel AUFGEBEN. * Die Anwendung "
-   "von Magie und Kampf ist nur den Teilnehmern erlaubt. Zuschauer auf den "
-   "Tribünen können von versprengten Teilnehmern nicht verletzt werden.* "
-   "Der Meister der Arena hat das Recht, den Kampf etwas ...interessanter... "
-   "zu gestalten, wenn er dies wünscht.* Die Kämpfe werden bis zum Tod gefochten. "
-   "Allerdings erleiden die Teilnehmer keinen dauerhaften Schaden aus einem "
-   "Tod innerhalb der Arena."
+   "und alle amtierenden Champions müssen ihre Titel AUFGEBEN.\n "
+   "* Die Anwendung von Magie und Kampf ist nur den Teilnehmern erlaubt. Zuschauer "
+   "auf den Tribünen können von Teilnehmern nicht verletzt werden.\n "
+   "* Der Meister der Arena hat das Recht, den Kampf etwas ...interessanter... "
+   "zu gestalten, wenn er dies wünscht.\n "
+   "* Die Kämpfe werden bis zum Tod gefochten. Allerdings erleiden die Teilnehmer "
+   "keinen dauerhaften Schaden aus einem Tod innerhalb der Arena."
 TosArena_start_tournament = de \
    "Die Banner werden gehißt und die Hörner erklingen, um das Königliche "
    "Turnier zu eröffnen!"
@@ -63,3 +56,6 @@ TosArena_doors_unlocked = de \
    "frei."
 TosArena_booth_command = de "booth"
 TosArena_lock_command = de "lock"
+TosArena_doortoroom_locked = de \
+   "~kDer Meister der Arena sagt, \"Die Tür ist verschlossen! Ich benötige aktuell "
+   "keine Hilfe bei der Leitung des Kampfes."

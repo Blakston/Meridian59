@@ -47,6 +47,7 @@
 #define SF_DEPTH1         0x00000001      // Sector has shallow depth
 #define SF_DEPTH2         0x00000002      // Sector has deep depth
 #define SF_DEPTH3         0x00000003      // Sector has very deep depth
+#define SF_MASK_DEPTH     0x00000003      // Mask to get sector depth
 
 #define SF_SCROLL_FLOOR   0x00000080      // Scroll floor texture
 #define SF_SCROLL_CEILING 0x00000100      // Scroll ceiling textire
@@ -58,7 +59,8 @@
 #define SF_FLICKER        0x00000200      // Flicker light in sector
 #define SF_SLOPED_FLOOR   0x00000400      // Sector has sloped floor
 #define SF_SLOPED_CEILING 0x00000800      // Sector has sloped ceiling
-#define   SF_HAS_ANIMATED     0x00001000      // has animated once and hence is dynamic geometry, required for new client
+#define SF_HAS_ANIMATED   0x00001000      // has animated once and hence is dynamic geometry, required for new client
+#define SF_NOMOVE         0x00002000      // Sector can't be moved on by mobs or players
 
 /* Bit flags for sloped surface characteristics */
 #define SLF_DIRECTIONAL   0x0001
@@ -187,6 +189,29 @@ typedef struct {
 
 #define MAX_NPTS 100
 
+// Wall drawing bitfield.
+#define SR_SEEN             0x001 // Some part drawn in Software Renderer (used for map lines)
+
+#define SR_DRAWBELOW        0x002 // Below wall drawn in SR
+#define SR_DRAWNORMAL       0x004 // Normal wall drawn in SR
+#define SR_DRAWABOVE        0x008 // Above wall drawn in SR
+#define SR_DRAWMASK         0x00E // Mask for SR draw flags (but not the 'seen' flag)
+
+#define HR_SEENPOSBELOW     0x010 // Pos side below wall visited in Hardware Renderer
+#define HR_SEENPOSNORMAL    0x020 // Pos side normal wall visited in HR
+#define HR_SEENPOSABOVE     0x040 // Pos side above wall visited in HR
+#define HR_SEENNEGBELOW     0x080 // Neg side below wall visited in HR
+#define HR_SEENNEGNORMAL    0x100 // Neg side normal wall visited in HR
+#define HR_SEENNEGABOVE     0x200 // Neg side above wall visited in HR
+#define HR_DRAWMASK         0x3F0 // Mask for HR draw flags
+
+#define WF_CANDRAWNORMAL    0x1000
+#define WF_CANDRAWABOVE     0x2000
+#define WF_CANDRAWBELOW     0x4000
+#define WF_CANDRAWMASK      0x7000
+
+typedef int WallSeenFlags;
+
 typedef struct WallData
 {
    union {
@@ -241,10 +266,7 @@ typedef struct WallData
    /* (x0,y0) and (x1,y1) must satisfy separator plane equation */
    /* positive side of wall must be on right when going from 0 to 1 */
 
-   Bool seen;                  /* True iff part of this wall has been drawn */
-   Bool drawbelow;     // True if D3D renderer should draw this wall.
-   Bool drawabove;     // True if D3D renderer should draw this wall.
-   Bool drawnormal;    // True if D3D renderer should draw this wall.
+   WallSeenFlags seen;
 
    // for bowtie handling
    BYTE bowtie_bits;           /* flags set indicating a bowtie & it's orientation */
@@ -278,6 +300,10 @@ typedef struct WallData
    custom_xyz pos_below_xyz[4];
    custom_xyz pos_above_xyz[4];
 
+   custom_xyz pos_normal_normal;
+   custom_xyz pos_below_normal;
+   custom_xyz pos_above_normal;
+
    custom_st pos_normal_stBase[4];
    custom_st pos_below_stBase[4];
    custom_st pos_above_stBase[4];
@@ -294,6 +320,10 @@ typedef struct WallData
    custom_xyz neg_below_xyz[4];
    custom_xyz neg_above_xyz[4];
 
+   custom_xyz neg_normal_normal;
+   custom_xyz neg_below_normal;
+   custom_xyz neg_above_normal;
+
    custom_st neg_normal_stBase[4];
    custom_st neg_below_stBase[4];
    custom_st neg_above_stBase[4];
@@ -305,6 +335,9 @@ typedef struct WallData
    unsigned int neg_normal_d3dFlags;
    unsigned int neg_below_d3dFlags;
    unsigned int neg_above_d3dFlags;
+
+   float scrollS; /* Amount to scroll wall in S direction */
+   float scrollT; /* Amount to scroll wall in T direction */
 } WallData, *WallList, *WallDataList;
 
 typedef struct
@@ -330,11 +363,18 @@ typedef struct {
    /*    invariant: p[npts] == p[0] */
 } Poly;
 
+typedef struct BSPleafdata
+{
+   custom_xyz xyz[MAX_NPTS];
+   custom_st st[MAX_NPTS];
+} BSPleafdata;
+
 typedef struct BSPleaf
 {
    Poly poly;                  /* Polygon of floor area */
    ObjectList objects;         /* objects within this leaf */
-
+   BSPleafdata floor;          /* pre-calculated floor data */
+   BSPleafdata ceil;           /* pre-calculated ceiling data */
    union {
       Sector *sector;      /* Sector to which leaf belongs (cannot be NULL) */
       WORD    sector_num;  /* Sector number (used during loading) */
@@ -373,6 +413,9 @@ typedef struct BSPnode
    Bool drawfloor;   // True if D3D renderer should draw this floor.
    Bool drawceiling; // True if D3D renderer should draw this ceiling.
 
+   // True if the renderer has already visited this node in this frame.
+   Bool seenFloorThisFrame;
+   Bool seenCeilThisFrame;
 } BSPnode, *BSPTree;
 
 #pragma warning( default : 4201 )      // nonstandard extension used : nameless struct/union (a union in this case )

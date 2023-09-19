@@ -14,7 +14,7 @@
 
 #include "bkod.h"
 
-#define BOF_VERSION 9
+#define BOF_VERSION 11
 
 #define MAX_CLASSES 100
 #define MAX_HANDLERS 500
@@ -36,6 +36,9 @@ enum
    POST_DECREMENT = 5,
    PRE_INCREMENT = 6,
    PRE_DECREMENT = 7,
+   UNARY_FIRST = 8,
+   UNARY_REST = 9,
+   UNARY_GETCLASS = 10,
 };
 enum
 {
@@ -70,7 +73,7 @@ char * name_var_type(int parm_type);
 char * name_goto_cond(int cond);
 char * name_function(int fnum);
 void print_hex_byte(unsigned char ch);
-char *str_constant(int num);
+char *str_constant(int type, int num);
 int  find_linenum(int offset);
 
 /* global variables */
@@ -282,7 +285,7 @@ void dump_bof()
       for (i=0;i<cvar_defaults;i++)
       {
 	 cvar_num = get_int();
-	 default_str = strdup(str_constant(get_int()));
+	 default_str = strdup(str_constant(CONSTANT, get_int()));
 	 printf("  classvar %2i init value: %s\n",cvar_num,default_str);
       }
 
@@ -294,7 +297,7 @@ void dump_bof()
       for (i=0;i<prop_defaults;i++)
       {
 	 prop_num = get_int();
-	 default_str = strdup(str_constant(get_int()));
+	 default_str = strdup(str_constant(CONSTANT, get_int()));
 	 printf("  property %2i init value: %s\n",prop_num,default_str);
       }
       
@@ -336,7 +339,7 @@ void dump_bof()
 	 {
 	    parm_id = get_int();
 	    parm_default = get_int();
-	    default_str = strdup(str_constant(parm_default));
+	    default_str = strdup(str_constant(CONSTANT, parm_default));
 	    printf("  parm id %i = %s\n",parm_id,default_str);
 	 }
 	 
@@ -428,7 +431,9 @@ char * name_unary_operation(int unary_op)
       case POST_INCREMENT : return "++";
       case PRE_DECREMENT :
       case POST_DECREMENT : return "--";
-      
+      case UNARY_FIRST: return "First elem";
+      case UNARY_REST: return "Rest elem";
+      case UNARY_GETCLASS: return "GetClass";
       default : return "INVALID";
    }
 }
@@ -488,8 +493,6 @@ char * name_function(int fnum)
    switch (fnum)
    {
    case CREATEOBJECT : return "Create";
-   //   case DELETEOBJECT : return "Delete";
-   case GETCLASS : return "GetClass";
 
    case SENDMESSAGE : return "Send";
    case POSTMESSAGE : return "Post";
@@ -531,6 +534,7 @@ char * name_function(int fnum)
    case GETTIMEREMAINING : return "GetTimeRemaining";
    case ISTIMER : return "IsTimer";
 
+   case CHANGESECTORFLAGBSP : return "ChangeSectorFlagBSP";
    case MOVESECTORBSP : return "MoveSectorBSP";
    case CHANGETEXTUREBSP : return "ChangeTextureBSP";
    case CREATEROOMDATA : return "LoadRoom";
@@ -545,15 +549,17 @@ char * name_function(int fnum)
    case BLOCKERCLEARBSP: return "BlockerClearBSP";
    case GETRANDOMPOINTBSP: return "GetRandomPointBSP";
    case GETSTEPTOWARDSBSP: return "GetStepTowardsBSP";
-
+   case GETRANDOMMOVEDESTBSP: return "GetRandomMoveDestBSP";
+   case GETSECTORHEIGHTBSP: return "GetSectorHeightBSP";
+   case SETROOMDEPTHOVERRIDEBSP: return "SetRoomDepthOverrideBSP";
+   case CALCUSERMOVEMENTBUCKET: return "CalcUserMovementBucket";
+   case INTERSECTLINECIRCLE: return "IntersectLineCircle";
    case STRINGTONUMBER : return "StringToNumber";
 
    case CANMOVEINROOMBSP: return "CanMoveInRoomBSP";
 
    case APPENDLISTELEM : return "AppendListElem";
    case CONS  : return "Cons";
-   case FIRST  : return "First";
-   case REST  : return "Rest";
    case LENGTH  : return "Length";
    case ISLISTMATCH : return "IsListMatch";
    case NTH  : return "Nth";
@@ -573,6 +579,8 @@ char * name_function(int fnum)
    case LISTCOPY : return "ListCopy";
 
    case GETTIME : return "GetTime";
+   case GETUNIXTIMESTRING: return "GetUnixTimeString";
+   case OLDTIMESTAMPFIX: return "OldTimestampFix";
    case GETTICKCOUNT : return "GetTickCount";
    case GETDATEANDTIME : return "GetDateAndTime";
 
@@ -618,10 +626,16 @@ void print_hex_byte(unsigned char ch)
       printf("%i",b2);
 }
 
-char *str_constant(int num)
+char *str_constant(int type, int num)
 {
    static char s[64];
    constant_type bc;
+
+   if (type == LOCAL_VAR || type == PROPERTY || type == CLASS_VAR)
+   {
+      sprintf(s, "%i", num);
+      return s;
+   }
 
    memcpy(&bc, &num, sizeof(constant_type));
    switch (bc.tag)
@@ -688,11 +702,29 @@ void dump_goto(char *text, int goto_type, int var_type)
 
    var = get_int();
    sprintf(text, "If %s %s %s goto absolute %08X",
-      name_var_type(var_type), str_constant(var),
+      name_var_type(var_type), str_constant(var_type, var),
       name_goto_cond(goto_type), dest_addr + index);
 }
 // Dump the body of a call statement.
 void dump_call(char *text)
+{
+   unsigned char num_parms, parm_type;
+   int i, parm_value;
+
+   num_parms = get_byte();
+   for (i = 0;i<num_parms;i++)
+   {
+      parm_type = get_byte();
+      parm_value = get_int();
+      if (i != 0)
+         strcat(text, ", ");
+      strcat(text, name_var_type(parm_type));
+      strcat(text, " ");
+      strcat(text, str_constant(parm_type, parm_value));
+   }
+}
+// Dump the body of a call statement with settings.
+void dump_call_settings(char *text)
 {
    unsigned char num_parms, parm_type;
    int i, parm_value, name_id;
@@ -707,7 +739,7 @@ void dump_call(char *text)
          strcat(text, ", ");
       strcat(text, name_var_type(parm_type));
       strcat(text, " ");
-      strcat(text, str_constant(parm_value));
+      strcat(text, str_constant(parm_type, parm_value));
    }
 
    strcat(text, "\n  : ");
@@ -725,7 +757,7 @@ void dump_call(char *text)
       strcat(text, " ");
       strcat(text, name_var_type(parm_type));
       strcat(text, " ");
-      strcat(text, str_constant(parm_value));
+      strcat(text, str_constant(parm_type, parm_value));
    }
 }
 // Dump the given unary instruction.
@@ -741,7 +773,7 @@ void dump_unary(char *text, int dest_type, int operation)
 
    dest = get_int();
    source = get_int();
-   source_str = _strdup(str_constant(source));
+   source_str = _strdup(str_constant(opcode->source1, source));
    switch (operation)
    {
    case PRE_INCREMENT:
@@ -790,8 +822,8 @@ void dump_binary(char *text, int dest_type, int operation)
    dest = get_int();
    source1 = get_int();
    source2 = get_int();
-   source1_str = _strdup(str_constant(source1));
-   source2_str = _strdup(str_constant(source2));
+   source1_str = _strdup(str_constant(opcode->source1, source1));
+   source2_str = _strdup(str_constant(opcode->source2, source2));
    sprintf(text, "%s %i = %s %s %s %s %s", name_var_type(dest_type), dest,
       name_var_type(opcode->source1), source1_str, name_binary_operation(operation),
       name_var_type(opcode->source2), source2_str);
@@ -815,7 +847,7 @@ void dump_return(char *text)
    {
       ret_val = get_int();
       sprintf(text, "Return %s %s", name_var_type(opcode->source1),
-         str_constant(ret_val));
+         str_constant(opcode->source1, ret_val));
       break;
    }
    }
@@ -899,7 +931,7 @@ void dump_call_store_none(char *text)
 
    info = get_byte();
 
-   sprintf(text, "Call %s--", name_function(info));
+   sprintf(text, "Call (no store) %s--", name_function(info));
    dump_call(text);
 }
 void dump_call_store_local(char *text)
@@ -910,8 +942,8 @@ void dump_call_store_local(char *text)
    info = get_byte();
    assign_index = get_int();
 
-   sprintf(text, "%s %s = Call %s\n  : ", name_var_type(LOCAL_VAR),
-      str_constant(assign_index), name_function(info));
+   sprintf(text, "%s %s = Call (local store) %s\n  : ", name_var_type(LOCAL_VAR),
+      str_constant(LOCAL_VAR, assign_index), name_function(info));
    dump_call(text);
 }
 void dump_call_store_property(char *text)
@@ -922,9 +954,42 @@ void dump_call_store_property(char *text)
    info = get_byte();
    assign_index = get_int();
 
-   sprintf(text, "%s %s = Call %s\n  : ", name_var_type(PROPERTY),
-      str_constant(assign_index), name_function(info));
+   sprintf(text, "%s %s = Call (prop store) %s\n  : ", name_var_type(PROPERTY),
+      str_constant(PROPERTY, assign_index), name_function(info));
    dump_call(text);
+}
+void dump_call_settings_store_none(char *text)
+{
+   unsigned char info;
+
+   info = get_byte();
+
+   sprintf(text, "Call (settings, no store) %s--", name_function(info));
+   dump_call_settings(text);
+}
+void dump_call_settings_store_local(char *text)
+{
+   unsigned char info;
+   int assign_index;
+
+   info = get_byte();
+   assign_index = get_int();
+
+   sprintf(text, "%s %s = Call (settings, local store) %s\n  : ", name_var_type(LOCAL_VAR),
+      str_constant(LOCAL_VAR, assign_index), name_function(info));
+   dump_call_settings(text);
+}
+void dump_call_settings_store_property(char *text)
+{
+   unsigned char info;
+   int assign_index;
+
+   info = get_byte();
+   assign_index = get_int();
+
+   sprintf(text, "%s %s = Call (settings, prop store) %s\n  : ", name_var_type(PROPERTY),
+      str_constant(PROPERTY, assign_index), name_function(info));
+   dump_call_settings(text);
 }
 // Unary
 void dump_unary_not_L(char *text)
@@ -974,6 +1039,30 @@ void dump_unary_preinc(char *text)
 void dump_unary_predec(char *text)
 {
    dump_unary(text, 0, PRE_DECREMENT);
+}
+void dump_unary_first_L(char *text)
+{
+   dump_unary(text, LOCAL_VAR, UNARY_FIRST);
+}
+void dump_unary_first_P(char *text)
+{
+   dump_unary(text, PROPERTY, UNARY_FIRST);
+}
+void dump_unary_rest_L(char *text)
+{
+   dump_unary(text, LOCAL_VAR, UNARY_REST);
+}
+void dump_unary_rest_P(char *text)
+{
+   dump_unary(text, PROPERTY, UNARY_REST);
+}
+void dump_unary_getclass_L(char *text)
+{
+   dump_unary(text, LOCAL_VAR, UNARY_GETCLASS);
+}
+void dump_unary_getclass_P(char *text)
+{
+   dump_unary(text, PROPERTY, UNARY_GETCLASS);
 }
 // Binary
 void dump_binary_add_L(char *text)
@@ -1137,6 +1226,9 @@ void CreateOpcodeTable(void)
    opcode_table[OP_CALL_STORE_NONE] = dump_call_store_none;
    opcode_table[OP_CALL_STORE_L] = dump_call_store_local;
    opcode_table[OP_CALL_STORE_P] = dump_call_store_property;
+   opcode_table[OP_CALL_SETTINGS_STORE_NONE] = dump_call_settings_store_none;
+   opcode_table[OP_CALL_SETTINGS_STORE_L] = dump_call_settings_store_local;
+   opcode_table[OP_CALL_SETTINGS_STORE_P] = dump_call_settings_store_property;
 
    opcode_table[OP_UNARY_NOT_L] = dump_unary_not_L;
    opcode_table[OP_UNARY_NOT_P] = dump_unary_not_P;
@@ -1185,4 +1277,10 @@ void CreateOpcodeTable(void)
    opcode_table[OP_ISCLASS_P] = dump_isclass_P;
    opcode_table[OP_ISCLASS_CONST_L] = dump_isclass_const_L;
    opcode_table[OP_ISCLASS_CONST_P] = dump_isclass_const_P;
+   opcode_table[OP_FIRST_L] = dump_unary_first_L;
+   opcode_table[OP_FIRST_P] = dump_unary_first_P;
+   opcode_table[OP_REST_L] = dump_unary_rest_L;
+   opcode_table[OP_REST_P] = dump_unary_rest_P;
+   opcode_table[OP_GETCLASS_L] = dump_unary_getclass_L;
+   opcode_table[OP_GETCLASS_P] = dump_unary_getclass_P;
 }

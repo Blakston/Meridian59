@@ -45,11 +45,13 @@
 #include <d3dx9.h>
 #include <DxErr.h>
 
+#include "geometry.h"
+
 typedef unsigned char Bool;
 enum {False = 0, True = 1};
 
 #define MAJOR_REV 50   /* Major version of client program */
-#define MINOR_REV 49   /* Minor version of client program; must be in [0, 99] */
+#define MINOR_REV 65   /* Minor version of client program; must be in [0, 99] */
 
 #define MAXAMOUNT 9     /* Max # of digits in a server integer */
 #define MAXSTRINGLEN 512 /* Max length of a string loaded from string table */
@@ -70,7 +72,12 @@ enum {False = 0, True = 1};
 #define P_CATCH 3
 
 extern void GetGamePath( char *szGamePath );
+
+#define BORDER_DEBUG_LENGTH 64
+void StartWatch();
+double StopWatch();
 double GetMicroCountDouble();
+double GetMilliCountDouble();
 
 extern long CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
 extern void ClearMessageQueue(void);
@@ -145,6 +152,7 @@ M59EXPORT void _cdecl dprintf(char *fmt,...);
 #include "color.h"
 #include "offer.h"
 #include "buy.h"
+#include "quest.h"
 #include "key.h"
 #include "say.h"
 #include "statstrt.h"
@@ -182,6 +190,8 @@ M59EXPORT void _cdecl dprintf(char *fmt,...);
 #include "srvrstr.h"
 #include "tooltip.h"
 #include "lagbox.h"
+#include "timebox.h"
+#include "fpsbox.h"
 #include "transfer.h"
 #include "hook.h"
 #include "web.h"
@@ -189,7 +199,6 @@ M59EXPORT void _cdecl dprintf(char *fmt,...);
 #include "md5.h"
 #include "xlat.h"
 #include "rops.h"
-#include "guest.h"
 #include "ping.h"
 #include "objdraw.h"
 #include "profane.h"
@@ -197,9 +206,11 @@ M59EXPORT void _cdecl dprintf(char *fmt,...);
 #include "pngstruct.h"
 #include "d3dtypes.h"
 #include "d3dcache.h"
+#include "d3dtexcache.h"
 #include "d3drender.h"
 #include "d3dlighting.h"
 #include "d3dparticle.h"
+#include "d3dmaterial.h"
 #include "matrix.h"
 #include "d3ddriver.h"
 #include "rscload.h"

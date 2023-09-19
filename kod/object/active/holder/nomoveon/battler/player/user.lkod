@@ -39,11 +39,11 @@ user_echo_str = de "%q"
 user_send_echo_str = de "Du teilst den anderen mit, \"%q~n\""
 user_send_single_echo_str = de "Du teilst %s mit, \"%q~n\""
 user_no_respond = de \
-   "~IWegen irgendetwas ist der User nicht in der Lage zu antworten."
+   "~IAufgrund deines Status kann dieser Benutzer möglicherweise nicht antworten."
 user_said_str_morphed = de "~n%s%s sagt, \"%q~n\""
 user_yelled_str_morphed = de "~n%s%s ruft, \"%q~n\""
 user_emote_str_morphed = de "~n%s%s %q"
-user_no_cast = de "Du bist nicht in der Lage, einen Zauberspruch zu zaubern."
+user_no_cast = de "Du bist nicht in der Lage, einen Zauberspruch auszusprechen."
 user_no_fight = de "Du bist nicht in der Lage, Deine Waffe zu heben."
 user_cant_mail_to = de \
    "Du kannst an %s keine Nachricht versenden, da er nicht existiert."
@@ -105,7 +105,7 @@ user_resist_pierce = de "Stech Wid."
 user_resist_thrust = de "Stoß Wid."
 user_resist_slash = de "Schlag Wid."
 user_resist_whip = de "Gerte"
-user_shal_power = de "Shal'ill"
+user_shal_power = de "Shal'ille"
 user_qor_power = de "Qor"
 user_faren_power = de "Faren"
 user_kraanan_power = de "Kraanan"
@@ -117,11 +117,15 @@ user_group_spells = de "Spells"
 user_group_skills = de "Skills"
 user_group_quests = de "Quests"
 
+user_no_quest_item = de \
+   "Du bist nicht im Besitz des benötigten Gegenstandes um diese Quest abzuschließen."
 user_active_quests_header = de "Aktive Quests: "
 user_no_active_quests_header = de "Keine aktiven Quests"
 user_completed_quests_header = de "Abgeschlossene Quests: "
 user_no_completed_quests_header = de "Keine abgeschlossenen Quests"
-
+user_failed_quests_header = de "Fehlgeschlagene Quests: "
+user_quest_log_updated = de \
+   "~IDein Quest-Logbuch wurde um einen Eintrag erweitert."
 
 user_got_offer = de "Du hast ein Angebot von %s%s."
 user_cant_offer = de "Du kannst %s%s nichts anbieten."
@@ -170,6 +174,17 @@ user_someone_logoff = de "~B~U~k[###]~n %s hat das Spiel verlassen."
 user_guildmate_logon = de "~IBegrüße Dein Gildenmitglied %s!"
 user_guildmate_logoff = de \
    "~IDein Gildenmitglied %s hat sich gerade verabschiedet."
+user_guild_shield_error_time = de \
+   "Du kannst in %i %s ein neues Muster für die Gildenschilder deiner "
+   "Gilde festlegen."
+user_guild_shield_error_disabled = de \
+   "Du kannst derzeit kein anderes Muster für die Gildenschilder deiner "
+   "Gilde festlegen – du besitzt bereits eines."
+user_time_days = de "Tage"
+user_time_hours = de "Stunden"
+user_time_minutes = de "Minuten"
+user_time_seconds = de "Sekunden"
+user_time_second = de "Sekunde"
 user_safety_on = de \
    "### Deine Sicherung ist ~B~gAKTIVIERT~n: Du kannst keine Unschuldigen "
    "angreifen."
@@ -233,7 +248,7 @@ user_goto_safety = de "Du wurdest an einen sicheren Ort geschickt."
 user_goto_object = de "Du wurdest zu %s%s geschickt."
 user_goto_jail = de "Du wurdest ins Gefängnis von Barloque geworfen!"
 user_last_known = de "der letzten bekannten Position von "
-user_school_shallile = de "Schule von Sha-Lill"
+user_school_shallile = de "Schule von Shal'ille"
 user_school_qor = de "Schule von Qor"
 user_school_kraanan = de "Schule von Kraanan"
 user_school_faren = de "Schule von Faren"
@@ -248,7 +263,7 @@ user_cant_withdraw_items = de "Du kannst hier keine Gegenstände mitnehmen!"
 user_cant_deposit = de "Du kannst hier nichts einzahlen!"
 user_cant_deposit_items = de "Du kannst hier keine Gegenstände lagern!"
 user_cant_balance = de "Du kannst Deinen Kontostand hier nicht überprüfen!"
-user_appeal = de "%s beschwert sich: %q"
+user_appeal = de "~B~cAPPEAL: ~v%s ~Bbeschwert sich: %q"
 user_first_time_appeal = de \
    "~B~U~k[###]~n %s hat sich zum ersten Mal eingewählt."
 user_did_appeal = de \
@@ -266,7 +281,7 @@ user_news_squelched = de \
    "Deine Fähigkeiten Nachrichten zu schreiben wurden dir genommen."
 user_news_toobig = de \
    "Wow Kumpel!! Atme mal tief durch, die Nachricht ist zu lang!"
-user_news_los = de "Du kannst die Nachrichtenkugel von hier aus nicht sehen."
+user_news_los = de "Du kannst die Nachrichtenkugel von deiner Position aus nicht richtig sehen."
 user_guildofficer_rsc = de "guildofficer"
 user_default_url = de "https://www.meridiannext.com/"
 user_autocombine_on = de "Du entscheidest dich, die Gegenstände zu kombinieren."
@@ -289,8 +304,6 @@ survival_err_already_public = de \
 survival_no_public_rooms = de \
    "Es ist noch keine öffentliche Arena gestartet worden."
 survival_no_guild_rooms = de "Deine Gilde hat derzeit keine Arena gestartet."
-survival_err_cant_join = de \
-   "Die Survival Arena hat bereits begonnen. Du kannst nicht mehr beitreten"
 phased_out_cant_drop = de \
    "Du kannst keine Gegenstände wegwerfen, während du ausgestiegen bist."
 user_reagentbag_on = de "Reagenzienbeutel AN"
@@ -334,7 +347,6 @@ user_say_join_pub_survival = de "öffentliche Survival beitreten"
 user_say_start_guild_survival = de "starte Gilden Survival"
 user_say_join_guild_survival = de "Gilden Survival beitreten"
 
-user_say_survival_opt_unnatural = de "--unnatural"
 user_say_survival_opt_pvpon = de "--pvpon"
 user_say_survival_opt_starthere = de "--thisbase"
 
@@ -362,3 +374,9 @@ user_spectate_off = de \
    "%s hat den physischen Kontakt zur Realität wieder erhalten."
 user_self_spectate_off = de \
    "Du hast die physische Verbindung zu diesem Platz wieder erhalten."
+
+user_honor_gain_penalty = de \
+   "Du erhältst %i Ehrenpunkte durch Deinen Sieg als %s feige das Schlachtfeld"
+   "verlässt."
+user_honor_loss_penalty = de \
+   "Du verlierst %i Ehrenpunkte durch Deinen Rückzug vom Schlachtfeld."

@@ -41,7 +41,7 @@ classvars:
    vbRoomEnchHitCaster = TRUE
 
    viAttack_type = 0
-   viAttack_spell = ATCK_SPELL_ALL
+   viSpell_type = SPL_TYPE_ALL
 
    vbIsAreaEffect = TRUE
 
@@ -154,8 +154,9 @@ messages:
       }
 
       if ((oTarget = self AND NOT vbRoomEnchHitCaster)
-         OR NOT Send(oCaster,@AllowBattlerAttack,#victim=oTarget,
-                     #stroke_obj=self))
+         OR (IsClass(oCaster,&Battler)
+            AND NOT Send(oCaster,@AllowBattlerAttack,#victim=oTarget,
+                        #stroke_obj=self)))
       {
          return;
       }
@@ -169,7 +170,7 @@ messages:
       }
 
       iDamage = Send(oTarget,@AssessDamage,#report=TRUE,#what=self,
-                        #damage=iDamage,#aspell=viAttack_spell,
+                        #damage=iDamage,#stype=viSpell_type,
                         #atype=viAttack_type);
 
       if (IsClass(oCaster,&Battler))
@@ -195,7 +196,15 @@ messages:
          oRoom = Send(oTarget,@GetOwner);
          oCasterRoom = Send(oCaster,@GetOwner);
          
-         Send(oCaster,@KilledSomething,#what=oTarget,#use_weapon=self);
+         if IsClass(oCaster,&Room)
+         {
+             Send(oCaster,@SomethingKilled,#what=oCaster,#victim=oTarget);
+             Send(oTarget,@Killed,#what=oCaster);
+         }
+         else
+         {
+             Send(oCaster,@KilledSomething,#what=oTarget,#use_weapon=self);
+         }
 
          if (oRoom <> oCasterRoom)
          {
@@ -215,9 +224,9 @@ messages:
       return First(state);
    }
 
-   GetAttackSpell()
+   GetSpellType()
    {
-      return viAttack_spell;
+      return viSpell_type;
    }
 
    GetAttackType()

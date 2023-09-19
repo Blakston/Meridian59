@@ -21,13 +21,12 @@ resources:
    Bait_name_rsc = "bait"
    Bait_icon_rsc = idistrac.bgf
    Bait_desc_rsc = \
-      "Makes you mighty appetizing to nearby monsters.  The more powerful you are, "
-      "the more likely you are to get the monster's attention.  "
-      "Requires web moss and firesand to cast."
-   
-   Bait_success = "The scent of something really yummy fills the air.  Your mouth "
-            "involuntarily begins to water, a moment before you realize that "
-            "the appetizing smell is coming from you!"
+      "Makes you mighty appetizing to nearby monsters.  The more powerful "
+      "you are, the more likely you are to get the monster's attention."
+   Bait_success = \
+      "The scent of something really yummy fills the air.  Your mouth "
+      "involuntarily begins to water, a moment before you realize that "
+      "the appetizing smell is coming from you!"
 
    Bait_sound = rdistrac.ogg
 
@@ -68,62 +67,79 @@ messages:
    {
       return 0;
    }
-	 
-   CastSpell(who = $,iSpellPower=0)
+
+   DoSpellEffects(who = $,iSpellPower=0)
    {
-      local oMonster,iMonsterFaction,iModifier,iBaseChance;
+      local i, iAggro, iDropOff, oBrain, oMonster, iMonsterFaction;
+
       Send(who,@MsgSendUser,#message_rsc=Bait_success);
-      foreach oMonster in send(send(who,@GetOwner),@GetHolderActive)
+
+      iAggro = iSpellPower * iSpellPower / 2;
+
+      foreach i in Send(send(who,@GetOwner),@GetHolderActive)
       {
-         if isClass(first(oMonster), &Monster)
-               and not ( send(first(oMonster), @GetBehavior) & AI_NPC )
+         oMonster = First(i);
+
+         if (NOT IsClass(oMonster,&Monster))
          {
-            iBaseChance = 25;
-            if send(first(oMonster), @GetTarget) = $
-            {
-               // easier if monster doesn't have a target
-               iModifier = 2;
-            } else {
-               // harder if monster already has a target
-               iModifier = 4;
-            }
+            continue;
+         }
+         // Can the monster attack the caster? If not possible to attack,
+         // don't bait them. Example would be minions with a master that
+         // can't fight the bait caster. This also checks for AI_NPC.
+         if (NOT Send(oMonster,@AllowBattlerAttack,#victim=who,#actual=FALSE,#report=FALSE))
+         {
+            continue;
+         }
 
-            // Faction Kludge: Should put in a special trait for "player-like" monsters.
-            // Doesn't fall for bait as much, since has "player-like" characteristics.
-            if IsClass(first(oMonster),&FactionTroop)
-            {
-               iBaseChance = 0;
-               iModifier = iModifier + 4;
-            }
+         // Avoid faction problems, don't make it work on aligned people.
+         iMonsterFaction = Send(oMonster,@GetFaction);
+         if NOT (iMonsterFaction = FACTION_NEUTRAL)
+            AND (send(who,@GetFaction) = iMonsterFaction)
+         {
+            continue;
+         }
 
-            // Avoid faction problems, don't make it work on aligned people.
-            iMonsterFaction = send(first(oMonster),@GetFaction);
-            if not(iMonsterFaction = FACTION_NEUTRAL) and (send(who,@GetFaction) = iMonsterFaction)
-            {
-               iBaseChance = -200;
-            }
-            
-            if random(1,100) < (iBaseChance + (iSpellPower/iModifier))
-            {
-	            /// don't allow in happyland, unless the monster has no master.
-	            if send(SYS,@IsPKAllowed) or send(first(oMonster),@GetMaster) = $
-	            {
-                    if Send(who,@SquaredDistanceTo,#what=First(oMonster)) < (piBaitRange * piBaitRange)
-                    {
-                       send(first(oMonster), @TargetSwitch, #what=who, #iHatred=100);
-                       send(first(oMonster), @EnterStateChase, #target=who, #actnow=True);
-                    }
-                }
-            }
+         // Don't allow in happyland, unless the monster has no master.
+         if NOT (Send(SYS,@IsPKAllowed) OR Send(oMonster,@GetMaster) = $)
+         {
+            continue;
+         }
+
+         // Effect fades with increased range. Scales from full effect at 0 range
+         // to zero effect at double spell range.
+         iDropOff = iAggro * (4 * piBaitRange * piBaitRange - Send(who,@SquaredDistanceTo,#what=oMonster));
+         iDropOff = iDropOff / (piBaitRange*piBaitRange);
+         iDropOff -= Random(0,2500);
+         iDropOff = bound(iDropOff,0,iAggro);
+
+         // Human mobs and minions fall for bait less often.
+         if IsClass(oMonster,&Human)
+            OR Send(oMonster,@IsMinion)
+         {
+            iDropOff /= 4;
+         }
+
+         if iDropOff = 0
+         {
+            continue;
+         }
+
+         oBrain = Send(oMonster,@GetBrain);
+         Send(oMonster,@AddHurtMeRecently,#who=who,#amount=iDropOff);
+
+         if Send(oBrain,@AttemptTargetSwitch,#mob=oMonster,#what=who,#event=8)
+         {
+            Send(oMonster,@EnterStateEngage,#target=who,#actnow=TRUE);
          }
       }
-      
-      propagate;
+
+      return TRUE;
    }
 
    GetPotionClass()
    {
-      RETURN &BaitPotion;
+      return &BaitPotion;
    }
 
 end

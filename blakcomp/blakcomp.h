@@ -12,6 +12,7 @@
 
 #ifdef BLAK_PLATFORM_WINDOWS
 #include <io.h>
+#include <direct.h>
 #endif
 
 #ifdef BLAK_PLATFORM_LINUX
@@ -26,6 +27,8 @@
 #include <stdarg.h>
 #include <fcntl.h>
 #include <sys/stat.h>
+#include <sys/types.h>
+#include <time.h>
 #include <ctype.h>
 #include "util.h"
 #include "table.h"
@@ -53,7 +56,15 @@
 //      called when a if/while/do-while/for-condition statement has a single
 //      expression containing the null check. Also replaces the list $ check
 //      assignment and test in foreach loops.
-#define BOF_VERSION 9
+// BOF_VERSION 10 (2-5-2017) added:
+//    - Split the 3 call opcodes into 6 based on whether any settings
+//      (named parameters) are present. Most calls use the new opcodes
+//      and skip outputting a 0 num settings byte. 10% kod performance increase.
+// BOF_VERSION 11 (24-11-2017) added:
+//    - First, Rest and GetClass calls converted to 2 opcodes,
+//      45-58% faster. Syntax unmodified.
+//    - Removed unused builtin IDs (including GUEST_CLASS).
+#define BOF_VERSION 11
 
 #define IDBASE        10000      /* Lowest # of user-defined id.  Builtin ids have lower #s */
 #define RESOURCEBASE  20000      /* Lowest # of user-defined resource. */
@@ -66,7 +77,7 @@
 
 #define MAXARGS         30      /* Maximum # of arguments to a function */
 
-#define TABLESIZE       1023    /* Size of symbol tables */
+#define TABLESIZE       3037    /* Size of symbol tables */
 
 #define MAX_LANGUAGE_ID 184
 
@@ -86,17 +97,17 @@ enum
 // enum for built-in class IDs. These appear in blakserv.h also.
 enum
 {
-   USER_CLASS = 0,
+   USER_CLASS = 1,
    SYSTEM_CLASS = 4,
-   GUEST_CLASS = 20,
-   ADMIN_CLASS = 23,
-   DM_CLASS = 32,
-   CREATOR_CLASS = 34,
-   SETTINGS_CLASS = 35,
-   REALTIME_CLASS = 36,
-   EVENTENGINE_CLASS = 37,
-   ESCAPED_CONVICT_CLASS = 38,
-   MAX_BUILTIN_CLASS = 38
+   ADMIN_CLASS = 22,
+   DM_CLASS = 25,
+   CREATOR_CLASS = 26,
+   SETTINGS_CLASS = 27,
+   REALTIME_CLASS = 28,
+   EVENTENGINE_CLASS = 29,
+   ESCAPED_CONVICT_CLASS = 30,
+   TEST_CLASS = 31,
+   MAX_BUILTIN_CLASS = 31
 };
 
 enum { C_NUMBER, C_STRING, C_NIL, C_FNAME, C_RESOURCE, C_CLASS, C_MESSAGE, C_OVERRIDE }; 
@@ -104,7 +115,8 @@ enum { C_NUMBER, C_STRING, C_NIL, C_FNAME, C_RESOURCE, C_CLASS, C_MESSAGE, C_OVE
 /* Types of operators */
 enum { AND_OP, OR_OP, PLUS_OP, MINUS_OP, MULT_OP, DIV_OP, MOD_OP, NOT_OP, NEG_OP,
        NEQ_OP, EQ_OP, LT_OP, GT_OP, LEQ_OP, GEQ_OP, BITAND_OP, BITOR_OP, BITNOT_OP,
-       PRE_INC_OP, PRE_DEC_OP, POST_INC_OP, POST_DEC_OP, ISCLASS_OP, ISCLASS_CONST_OP};
+       PRE_INC_OP, PRE_DEC_OP, POST_INC_OP, POST_DEC_OP, ISCLASS_OP, ISCLASS_CONST_OP,
+       FIRST_OP, REST_OP, GETCLASS_OP};
 
 typedef struct {
    int type;
@@ -127,10 +139,16 @@ typedef struct {
    const char *name;
    int type;
    int idnum;
-   int ownernum; /* Id # of thing that contains this identifier in its scope.  e.g. if
-		    this id is of type message, then this is the class # */
-   int source;   /* Whether this id came from the database file (source = DBASE)
-		    or from a source code file (source = COMPILE) */
+   // Id # of thing that contains this identifier in its scope.  e.g. if
+   // this id is of type message, then this is the class #
+   int ownernum;
+   // Whether this id came from the database file (source = DBASE)
+   // or from a source code file (source = COMPILE)
+   int source;
+   // Number of times this ID has been referenced, not including init.
+   // Only used for resources at present.
+   int reference_num;
+   bool is_string_rsc;
 } *id_type, id_struct;
 
 typedef struct {
@@ -315,7 +333,7 @@ typedef struct {
    int curclass;         /* Current class id # */
    int curmessage;       /* Current message handler id # */
    list_type recompile_list; /* List of classes that need to be recompiled */
-   list_type constants;  /* List of constants declared in current class */
+   Table constants;      /* Table of constants declared in current class */
 
    int num_strings;      /* Number of debugging strings encountered so far */
    list_type strings;    /* List of pointers to debugging strings */ 
@@ -338,6 +356,8 @@ void include_file(char *filename);
 const char * get_function_name_by_opcode(int opcode);
 
 /* action handlers */
+int include_const_file_parse(char *);
+void include_const_file_parse_finished(void);
 const_type make_numeric_constant(int);
 const_type make_nil_constant(void);
 const_type make_string_constant(char *);
@@ -359,16 +379,19 @@ expr_type make_expr_from_constant(const_type);
 expr_type make_expr_from_literal(id_type id);
 expr_type make_bin_op(expr_type, int, expr_type);
 expr_type make_isclass_op(expr_type, expr_type);
+expr_type make_unarycall_op(int op, expr_type expr1);
 expr_type make_un_op(int, expr_type);
 
 arg_type make_arg_from_expr(expr_type expr);
 arg_type make_arg_from_setting(id_type id, expr_type expr);
 
 id_type make_constant_id(id_type, expr_type);
+id_type make_constant_id_noeol(id_type, expr_type);
 param_type make_parameter(id_type, expr_type);
 classvar_type make_classvar(id_type, expr_type);
 property_type make_property(id_type, expr_type);
 resource_type make_resource(id_type, const_type, int);
+resource_type make_resource_noeol(id_type, const_type, int);
 int make_language_id(char *);
 
 void check_break(void);
@@ -402,6 +425,7 @@ void action_error(const char *fmt, ...);
 void simple_error(const char *fmt, ...);
 void simple_warning(const char *fmt, ...);
 void initialize_parser(void);
+void compile_file_list(char *path, list_type l); // also used in dircompile.c
 
 int id_hash(const void *info, int table_size);
 int id_compare(void *info1, void *info2);
@@ -410,6 +434,8 @@ int class_compare(void *info1, void *info2);
 int add_identifier(id_type id, int type);
 int get_statement_line(stmt_type s, int curline);
 
+void codegen_init(void);
+void codegen_exit(void);
 void codegen(char *current_fname, char *bof_fname);
 void set_kodbase_filename(char *filename);
 int load_kodbase(void);
@@ -422,6 +448,7 @@ extern SymbolTable st;          /* Compiler's symbol table */
 /**************************** Include files ***************************/
 #include "sort.h"
 #include "optimize.h"
+#include "dircompile.h"
 
 #endif /* #ifdef _BLAKCOMP_H */
 

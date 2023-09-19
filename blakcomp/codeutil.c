@@ -15,6 +15,12 @@
 // to many functions in this file.
 extern int outfile;
 extern char *current_fname;
+
+// See codegen.c for explanation.
+extern char *codegen_buffer;
+extern int codegen_buffer_size;
+extern int codegen_buffer_warning_size;
+
 /************************************************************************/
 /*
  * codegen_warning: Print a warning message during code generation.
@@ -24,7 +30,7 @@ void codegen_warning(int linenumber, const char *fmt, ...)
 {
    va_list marker;
 
-   fprintf(stderr, "%s(%d): warning: ", current_fname, linenumber);
+   printf("%s(%d): warning: ", current_fname, linenumber);
 
    va_start(marker, fmt);
    vprintf(fmt, marker);
@@ -51,23 +57,32 @@ void codegen_error(const char *fmt, ...)
 /************************************************************************/
 void OutputOpcode(int outfile, opcode_data opcode)
 {
-   BYTE datum;
+   memcpy(&(codegen_buffer[codegen_buffer_position]), &opcode, 1);
+   codegen_buffer_position++;
 
-   /* Write out a 1 byte opcode--need to memcpy since opcode is bitfield structure */
-   memcpy(&datum, &opcode, 1);
-   write(outfile, &datum, 1);
+   // Resize buffer at 90%.
+   if (codegen_buffer_position > codegen_buffer_warning_size)
+      codegen_resize_buffer();
 }
 /************************************************************************/
 void OutputByte(int outfile, BYTE datum)
 {
-   /* Write out a 1 byte # */
-   write(outfile, &datum, sizeof(datum));
+   memcpy(&(codegen_buffer[codegen_buffer_position]), &datum, 1);
+   codegen_buffer_position++;
+
+   // Resize buffer at 90%.
+   if (codegen_buffer_position > codegen_buffer_warning_size)
+      codegen_resize_buffer();
 }
 /************************************************************************/
 void OutputInt(int outfile, int datum)
 {
-   /* Write out a 4 byte # */
-   write(outfile, &datum, sizeof(datum)); 
+   memcpy(&(codegen_buffer[codegen_buffer_position]), &datum, 4);
+   codegen_buffer_position += 4;
+
+   // Resize buffer at 90%.
+   if (codegen_buffer_position > codegen_buffer_warning_size)
+      codegen_resize_buffer();
 }
 /************************************************************************/
 /*
@@ -249,7 +264,13 @@ int const_to_int(const_type c)
 void OutputConstant(int outfile, const_type c)
 {
    int outnum = const_to_int(c);
-   write(outfile, &outnum, sizeof(outnum));
+
+   memcpy(&(codegen_buffer[codegen_buffer_position]), &outnum, sizeof(outnum));
+   codegen_buffer_position += sizeof(outnum);
+
+   // Resize buffer at 90%.
+   if (codegen_buffer_position > codegen_buffer_warning_size)
+      codegen_resize_buffer();
 }
 /************************************************************************/
 /*
@@ -514,6 +535,9 @@ int flatten_expr(expr_type e, id_type destvar, int maxlocal)
          case PRE_DEC_OP:  OutputByte(outfile, (BYTE)OP_UNARY_PREDEC);   break;
          case POST_INC_OP: OutputByte(outfile, (BYTE)OP_UNARY_POSTINC);  break;
          case POST_DEC_OP: OutputByte(outfile, (BYTE)OP_UNARY_POSTDEC);  break;
+         case FIRST_OP:    OutputByte(outfile, (BYTE)OP_FIRST_L);        break;
+         case REST_OP:     OutputByte(outfile, (BYTE)OP_REST_L);         break;
+         case GETCLASS_OP: OutputByte(outfile, (BYTE)OP_GETCLASS_L);     break;
 
          default:
             codegen_error("Unknown unary operator type (%d) encountered",
@@ -531,6 +555,9 @@ int flatten_expr(expr_type e, id_type destvar, int maxlocal)
          case PRE_DEC_OP:  OutputByte(outfile, (BYTE)OP_UNARY_PREDEC);   break;
          case POST_INC_OP: OutputByte(outfile, (BYTE)OP_UNARY_POSTINC);  break;
          case POST_DEC_OP: OutputByte(outfile, (BYTE)OP_UNARY_POSTDEC);  break;
+         case FIRST_OP:    OutputByte(outfile, (BYTE)OP_FIRST_P);        break;
+         case REST_OP:     OutputByte(outfile, (BYTE)OP_REST_P);         break;
+         case GETCLASS_OP: OutputByte(outfile, (BYTE)OP_GETCLASS_P);     break;
 
          default:
             codegen_error("Unknown unary operator type (%d) encountered",

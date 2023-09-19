@@ -22,7 +22,6 @@ resources:
 
    XeoHoly_name_rsc = "si'xeochicatl"
    XeoHoly_koc_name_rsc = "si'xeo'chicatl"
-   XeoHoly_icon_rsc = Xeo.bgf
    XeoHoly_desc_rsc = \
       "Before you is a si'xeochicatl, a fearsome monster given life by the "
       "chaotic magic of the Meridian.  The si'xeochicatl is the embodiment of "
@@ -40,13 +39,17 @@ resources:
    vrDesc = XeoHoly_desc_rsc
    vrKocName = XeoHoly_koc_name_rsc
 
-   viAttack_type = ATCK_WEAP_MAGIC
+   viAttack_type = ATK_TYPE_MAGIC
    viLevel = 170
    viDifficulty = 7
    viSpeed = SPEED_FASTER
    vrSound_aware = XeoHoly_sound_aware
 
    viTreasure_type = TID_XEO_HOLY
+
+   viFatigueChance = 5
+   viFatigueStrength = 5000
+   viFatigueDuration = 10000
 
 properties:
 
@@ -56,16 +59,15 @@ messages:
 
    Constructed()
    {
-      plResistances = [ [-ATCK_SPELL_HOLY, 110 ],
-                        [-ATCK_SPELL_UNHOLY, -20 ],
-                        [ATCK_WEAP_MAGIC, -10 ],
-                        [-ATCK_SPELL_QUAKE, 100 ]
+      plResistances = [ [-SPL_TYPE_HOLY, 110 ],
+                        [-SPL_TYPE_UNHOLY, -20 ],
+                        [ATK_TYPE_MAGIC, -10 ],
+                        [-SPL_TYPE_QUAKE, 100 ]
                       ];
 
       piColor_Translation = Send(SYS,@EncodeTwoColorXLAT,#color1=PT_BLBLK_REDWHT);
 
-      plSpellBook = [ [SID_PURGE,2,60], [SID_DAZZLE,10,70],
-                      [SID_MARK_OF_DISHONOR,3,100] ];
+      plActions = [ [SID_PURGE],[SID_DAZZLE],[SID_MARK_OF_DISHONOR] ];
 
       propagate;
    }

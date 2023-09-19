@@ -46,10 +46,6 @@ static char INIDownload[]    = "Download";
 static char INIBrowser[]     = "Browser";
 static char INIDefaultBrowser[] = "DefaultBrowser";
 static char INIVersion[]     = "INIVersion";
-static char INIGuest[]       = "Guest";
-static char INIServerLow[]   = "ServerLow";
-static char INIServerHigh[]  = "ServerHigh";
-static char INIServerGuest[] = "ServerGuest";
 static char INILastPass[]    = "Sentinel";
 static char INISoundLibrary[] = "SoundLibrary";
 static char INICacheBalance[] = "CacheBalance";
@@ -58,6 +54,8 @@ static char INIGridCacheMin[] = "GridCacheMin";
 static char INIMusicVolume[]  = "MusicVolume";
 static char INISoundVolume[]  = "SoundVolume";
 static char INIMipMaps[]      = "MipMaps";
+static char INIDynamicLights[]= "DynamicLights";
+static char INIDrawWireframe[]= "DrawWireframe";
 static char INIAntiAliasing[] = "AntiAliasing";
 
 static char interface_section[]= "Interface";
@@ -193,8 +191,8 @@ void ConfigLoad(void)
    config.save_settings = GetConfigInt(misc_section, INISaveOnExit, True, ini_file);
    config.play_music    = GetConfigInt(misc_section, INIPlayMusic, True, ini_file);
    config.play_sound    = GetConfigInt(misc_section, INIPlaySound, True, ini_file);
-   config.music_volume    = GetConfigInt(misc_section, INIMusicVolume, 100, ini_file);
-   config.sound_volume    = GetConfigInt(misc_section, INISoundVolume, 100, ini_file);
+   config.music_volume    = GetConfigInt(misc_section, INIMusicVolume, 75, ini_file); // 100 is potentially too loud, err on the side of caution.
+   config.sound_volume    = GetConfigInt(misc_section, INISoundVolume, 75, ini_file); // 100 is potentially too loud, err on the side of caution.
    config.play_loop_sounds    = GetConfigInt(misc_section, INIPlayLoopSounds, True, ini_file);
    config.play_random_sounds    = GetConfigInt(misc_section, INIPlayRandomSounds, True, ini_file);
    config.large_area    = GetConfigInt(misc_section, INIArea, True, ini_file);
@@ -255,10 +253,6 @@ void ConfigLoad(void)
    config.xp_display_percent = GetConfigInt(interface_section, XPDisplay, False, ini_file);
    config.chat_time_stamps = GetConfigInt(interface_section, INITimeStamps, False, ini_file);
    config.language     = GetConfigInt(interface_section, INILanguage, 0, ini_file);
-   config.guest        = GetConfigInt(misc_section, INIGuest, False, ini_file);
-   config.server_low   = GetConfigInt(misc_section, INIServerLow, 0, ini_file);
-   config.server_high  = GetConfigInt(misc_section, INIServerHigh, 0, ini_file);
-   config.server_guest = GetConfigInt(misc_section, INIServerGuest, 0, ini_file);
    config.lastPasswordChange = GetConfigInt(misc_section, INILastPass, 0, ini_file);
 
    /* charlie: 
@@ -272,6 +266,8 @@ void ConfigLoad(void)
    config.ObjectCacheMin = GetConfigInt(misc_section, INIObjectCacheMin, 6000000, ini_file);
    config.GridCacheMin = GetConfigInt(misc_section, INIGridCacheMin,   4000000, ini_file);
    config.mipMaps = GetConfigInt(misc_section, INIMipMaps, true, ini_file);
+   config.drawWireframe = GetConfigInt(misc_section, INIDrawWireframe, true, ini_file);
+   config.dynamicLights = GetConfigInt(misc_section, INIDynamicLights, true, ini_file);
    config.aaMode = GetConfigInt(misc_section, INIAntiAliasing, 8, ini_file);
 
    if( config.CacheBalance < 10 ) config.CacheBalance = 10 ;
@@ -329,6 +325,8 @@ void ConfigSave(void)
    WriteConfigInt(misc_section, INIObjectCacheMin, config.ObjectCacheMin, ini_file);
    WriteConfigInt(misc_section, INIGridCacheMin, config.GridCacheMin, ini_file);
    WriteConfigInt(misc_section, INIMipMaps, config.mipMaps, ini_file);
+   WriteConfigInt(misc_section, INIDrawWireframe, config.drawWireframe, ini_file);
+   WriteConfigInt(misc_section, INIDynamicLights, config.dynamicLights, ini_file);
    WriteConfigInt(misc_section, INIAntiAliasing, config.aaMode, ini_file);
 
    WriteConfigInt(users_section, INIDrawPlayerNames, config.draw_player_names, ini_file);
@@ -372,11 +370,6 @@ void ConfigSave(void)
    WriteConfigInt(interface_section, INITimeStamps, config.chat_time_stamps, ini_file);
    WriteConfigInt(interface_section, INILanguage, config.language, ini_file);
 
-   // Don't write out "guest" option; user can't set it
-
-   WriteConfigInt(misc_section, INIServerLow, config.server_low, ini_file);
-   WriteConfigInt(misc_section, INIServerHigh, config.server_high, ini_file);
-   WriteConfigInt(misc_section, INIServerGuest, config.server_guest, ini_file);
    WriteConfigInt(misc_section, INILastPass, config.lastPasswordChange, ini_file);
    WriteConfigInt(special_section, INIShowFPS, config.showFPS, ini_file);
    // "Special" section options NOT saved, so that they're not normally visible (except FPS)

@@ -115,13 +115,6 @@ void __cdecl TransferStart(void *download_info)
          return;
       }
 
-      // Skip non-guest files if we're a guest
-      if (config.guest && !(info->files[i].flags & DF_GUEST))
-      {
-         PostMessage(info->hPostWnd, BK_FILEDONE, 0, i);
-         continue;
-      }
-
       // If not supposed to transfer file, inform main thread
       if (DownloadCommand(info->files[i].flags) != DF_RETRIEVE)
       {
@@ -140,7 +133,7 @@ void __cdecl TransferStart(void *download_info)
 #if VANILLA_UPDATER
       sprintf(filename, "%s%s", info->path, info->files[i].filename);
 #else
-      sprintf(filename, "%s//%s", info->path, info->files[i].filename);
+      sprintf(filename, "%s/%s", info->path, info->files[i].filename);
 #endif
       hFile = HttpOpenRequest(hSession, NULL, filename, NULL, NULL,
                               mime_types, INTERNET_FLAG_NO_UI, 0);

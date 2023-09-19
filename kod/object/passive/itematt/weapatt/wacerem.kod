@@ -38,6 +38,7 @@ resources:
 
 classvars:
 
+   vrName = weapatt_ceremonial_name
    vrDesc = weapattcerem_desc
    vbPowerDesc = TRUE
    viItem_Att_Num = WA_CEREMONIAL
@@ -47,7 +48,9 @@ classvars:
 
 properties:
 
-   piValue_modifier = 150   /// modify the object's price by 100//
+   // Modify the object's price by percent
+   piValue_modifier = 150
+
    piValue_power_modifier = 5
 
 messages:
@@ -70,11 +73,7 @@ messages:
       return Send(self,@InitialWeaponPower,#oItem=oItem);
    }
 
-////////////////////////////////////////////////
-///
-///  Effect Functions
-///
-////////////////////////////////////////////////
+   // Effect Functions
 
    ModifyHitRoll(hitroll=0,target=$,wielder=$,lData=$)
    "Give a +power bonus in the arena, but -power everywhere else."

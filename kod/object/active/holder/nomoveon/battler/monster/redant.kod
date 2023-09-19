@@ -45,21 +45,27 @@ classvars:
 
    viTreasure_type = TID_TOUGH
    viSpeed = SPEED_AVERAGE
-   viAttack_type = ATCK_WEAP_BITE
+   viAttack_type = ATK_TYPE_BITE
    viAttributes = MOB_SPASM
    viLevel = 65
    viDifficulty = 8
    viVisionDistance = 18
    // Attack range of 192, or 3 row/col.
-   viAttackRange = 192
+   viMeleeRange = 192
    viKarma = -40
-   viDefault_behavior = AI_FIGHT_AGGRESSIVE | AI_FIGHT_WIZARD_KILLER
+   viDefault_behavior = AI_FIGHT_AGGRESSIVE
    viCashmin = 225
    viCashmax = 600
    vrSound_hit = redant_sound_hit
    vrSound_miss = redant_sound_miss
    vrSound_aware = redant_sound_aware
    vrSound_death = redant_sound_death
+
+   vbCanBleed = FALSE
+   vbCanSiphon = FALSE
+   viBleedChance = 15
+   viBleedStrength = 1000
+   viBleedDuration = 8000
 
 properties:
 
@@ -69,21 +75,12 @@ messages:
 
    Constructed()
    {
-      plResistances = [ [-ATCK_SPELL_FIRE, 65 ],
-                        [ATCK_WEAP_BLUDGEON, 65 ],
-                        [ATCK_WEAP_NERUDITE, -10 ],
-                        [ATCK_WEAP_MAGIC, -10] ];
+      plResistances = [ [-SPL_TYPE_FIRE, 65 ],
+                        [ATK_TYPE_BLUDGEON, 65 ],
+                        [ATK_TYPE_NERUDITE, -10 ],
+                        [ATK_TYPE_MAGIC, -10] ];
 
       propagate;
-   }
-
-   MonsterAttack(what = $)
-   {
-      piAnimation = ANIM_ATTACK;
-      Send(poOwner,@SomethingChanged,#what=self);
-      piAnimation = ANIM_NONE;
-
-      return;
    }
 
    DoSpasm()

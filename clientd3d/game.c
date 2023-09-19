@@ -14,6 +14,7 @@
 player_info player;
 room_type current_room;
 BOOL dataValid = FALSE;
+extern Bool gD3DRedrawAll;
 
 /* This flag is True before we get the first player info message from the server,
  * and when we're not in the game.  We use it to keep track of entering the game,
@@ -37,7 +38,10 @@ void SetFrameDrawn(BOOL flag)
 {
    if (!frameDrawn && flag) // this is first visible flag and we need to send MOVE to server
    {
-      InvalidateRect(hMain, NULL, FALSE);
+      // Not sure why this needs to be called, removing it makes room changes
+      // smoother and prevents a flashing effect in the whole client during
+      // the room change.
+      //InvalidateRect(hMain, NULL, FALSE);
       MoveUpdateServer();
       CacheReport();
    }
@@ -311,7 +315,8 @@ void EnterNewRoom(void)
 {
    SetFrameDrawn(FALSE);
 
-   DrawGridBorder();   
+   // Should be drawn later.
+   //DrawGridBorder();
 
    SoundStopAll(SF_LOOP);  // Turn off looping sounds
 
@@ -433,7 +438,15 @@ void CreateObject(room_contents_node *r)
    current_room.contents = list_add_first(current_room.contents, r);
 
    RoomObjectSetHeight(r);
-   
+
+   // Must redraw static lights for light changes.
+   if ((r->obj.dLighting.flags & LIGHT_FLAG_ON) == LIGHT_FLAG_ON
+      && !((r->obj.dLighting.flags & LIGHT_FLAG_DYNAMIC) == LIGHT_FLAG_DYNAMIC))
+   {
+      if (gD3DRedrawAll == FALSE)
+         gD3DRedrawAll |= D3DRENDER_REDRAW_STATIC_LIGHTS;
+   }
+
    RedrawAll();
 }
 /************************************************************************/
@@ -447,6 +460,14 @@ void RemoveObject(ID obj_id)
    {
       debug(("Couldn't find object #%d to delete\n", obj_id));
       return;
+   }
+
+   // Must redraw static lights for light changes.
+   if ((r->obj.dLighting.flags & LIGHT_FLAG_ON) == LIGHT_FLAG_ON
+      && !((r->obj.dLighting.flags & LIGHT_FLAG_DYNAMIC) == LIGHT_FLAG_DYNAMIC))
+   {
+      if (gD3DRedrawAll == FALSE)
+         gD3DRedrawAll |= D3DRENDER_REDRAW_STATIC_LIGHTS;
    }
 
 	//	If deleted object was user's selected target, clear target.
@@ -484,6 +505,13 @@ void ChangeObject(object_node *new_obj, BYTE translation, BYTE effect, Animate *
    r = GetRoomObjectById(new_obj->id);
    if (r != NULL)
    {
+      // Must redraw room for static light changes.
+      if (!(r->obj.dLighting.flags & LIGHT_FLAG_DYNAMIC)
+         && (r->obj.dLighting.intensity != new_obj->dLighting.intensity
+            || r->obj.dLighting.color != new_obj->dLighting.color
+            || r->obj.dLighting.flags != new_obj->dLighting.flags))
+         gD3DRedrawAll |= D3DRENDER_REDRAW_ALL;
+
       RoomObjectDestroy(r);
       // XXX This is bad--should call ObjectCopy and redo allocation in server.c/HandleChange
 
@@ -534,7 +562,96 @@ void ChangeObject(object_node *new_obj, BYTE translation, BYTE effect, Animate *
       OverlayListDestroy(overlays);
 }
 /************************************************************************/
+void ChangeObjectFlags(object_node *new_obj)
+{
+   room_contents_node *r;
+   object_node *inv;
 
+   // Check room first.
+   r = GetRoomObjectById(new_obj->id);
+   if (r)
+   {
+      // No redraw unless flags actually change.
+      bool changed = false;
+      if (new_obj->flags != r->obj.flags)
+      {
+         changed = true;
+         r->obj.flags = new_obj->flags;
+      }
+      if (new_obj->drawingtype != r->obj.drawingtype)
+      {
+         changed = true;
+         r->obj.drawingtype = new_obj->drawingtype;
+      }
+      if (new_obj->minimapflags != r->obj.minimapflags)
+      {
+         changed = true;
+         r->obj.minimapflags = new_obj->minimapflags;
+      }
+      if (new_obj->objecttype != r->obj.objecttype)
+      {
+         changed = true;
+         r->obj.objecttype = new_obj->objecttype;
+      }
+      if (new_obj->namecolor != r->obj.namecolor)
+      {
+         changed = true;
+         r->obj.namecolor = new_obj->namecolor;
+      }
+      if (new_obj->moveontype != r->obj.moveontype)
+      {
+         changed = true;
+         r->obj.moveontype = new_obj->moveontype;
+      }
+
+      if (changed)
+         RedrawAll();
+   }
+   else
+   {
+      // Check inventory.
+      inv = (object_node *)
+         list_find_item(player.inventory, (void *)new_obj->id, CompareIdObject);
+      if (inv)
+      {
+         // No redraw unless flags actually change.
+         bool changed = false;
+         if (new_obj->flags != inv->flags)
+         {
+            changed = true;
+            inv->flags = new_obj->flags;
+         }
+         if (new_obj->drawingtype != inv->drawingtype)
+         {
+            changed = true;
+            inv->drawingtype = new_obj->drawingtype;
+         }
+         if (new_obj->minimapflags != inv->minimapflags)
+         {
+            changed = true;
+            inv->minimapflags = new_obj->minimapflags;
+         }
+         if (new_obj->objecttype != inv->objecttype)
+         {
+            changed = true;
+            inv->objecttype = new_obj->objecttype;
+         }
+         if (new_obj->namecolor != inv->namecolor)
+         {
+            changed = true;
+            inv->namecolor = new_obj->namecolor;
+         }
+         if (new_obj->moveontype != inv->moveontype)
+         {
+            changed = true;
+            inv->moveontype = new_obj->moveontype;
+         }
+
+         if (changed)
+            ModuleEvent(EVENT_INVENTORY, INVENTORY_CHANGE, &inv);
+      }
+   }
+}
 
 /************************************************************************/
 void SetInventory(list_type inventory)

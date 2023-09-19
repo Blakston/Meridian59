@@ -9,9 +9,8 @@ spell_triggers_outlawing = de \
    "Du wurdest wegen der Anwendung eines offensiven Zaubers zum Gesetzlosen "
    "erklärt!"
 spell_outlaw = de \
-   "Die Anwendung dieses Zaubers kann dazu führen, dass Du zum Gesetzlosen "
+   "  Die Anwendung dieses Zaubers kann dazu führen, dass Du zum Gesetzlosen "
    "erklärt wirst."
-spell_nothing = de " "
 spell_no_rest = de \
    "Du kannst keine Zaubersprüche aussprechen, während Du rastest!"
 spell_bad_location = de "Du kannst '%s' hier nicht anwenden."
@@ -44,14 +43,11 @@ spell_hands_too_full = de \
    "Deine Hände sind zu voll, um Zauber zu sprechen, die auf andere Spieler "
    "wirken."
 spell_unlawful_outlaw = de \
-   "Sha-Lill ist Durch Deinen ungerechtfertigten Angriff erzürnt."
+   "Shal'ille ist Durch Deinen ungerechtfertigten Angriff erzürnt."
 spell_failed_by_chance = de \
    "Dein Versuch, den %s-Zauber anzuwenden, war erfolglos."
-spell_advanced = de \
-   "Du hast Deine Fähigkeiten in %s verbessert! Deine Fähigkeit liegt nun "
-   "bei %s."
 spell_no_pvp_flag = de \
-   "Shal'ill verhindert, dass Du diesen Zauberspruch ausführst, da Du dich "
+   "Shal'ille verhindert, dass Du diesen Zauberspruch ausführst, da Du dich "
    "dazu entschlossen hast nicht an Kämpfen gegen andere Spieler teilzunehmen."
 spell_guardian = de \
    "Dein Schutzengel sagt zu Dir, \"Du bist noch nicht so weit, offensive "
@@ -60,17 +56,14 @@ spell_cant_help = de \
    "Dein Schutzengel flüstert Dir zu, \"%s%s hat erst kürzlich jemanden angegriffen. "
    "Greife nicht ein.\""
 spell_too_soon_since_attacking = de \
-   "Du hast vor kurzem auch einen Spieler angegriffen."
+   "Du hast erst kürzlich einen Spieler angegriffen!"
 spell_resists = de "%s%s widersteht Deinem Zauber!"
 spell_silenced_rsc = de \
    "Die Worte bleiben Dir im Halse stecken und Du kannst nicht sprechen."
-spell_desc_rsc = de "SCHULE : %s         LEVEL : %i \n\n%s%s%s%r%r%r"
-spell_school_riija = de "Riija"
-spell_school_shalille = de "Shal'ill"
-spell_school_qor = de "Qor"
-spell_school_faren = de "Faren"
-spell_school_kraanan = de "Kraanan"
-spell_school_jala = de "Jala"
+spell_desc_school = de "SCHULE : %s"
+spell_desc_vigor = de "AUSDAUER : %i"
+spell_reg_desc = de "\n\nBenötigte Reagenzien:%r"
+spell_school_shalille = de "Shal'ille"
 spell_intro_rsc = de "Einer der vielen magischen Zaubersprüche."
 spell_gesture_third = de \
    "%s%s murmelt etwas %svor sich hin und führt eine geheimnisvolle Geste "
@@ -93,6 +86,12 @@ spell_trance_begin = de \
    "Du konzentrierst Deinen gesamten Willen auf den Zauberspruch %s."
 spell_trance_break = de \
    "Deine Konzentration wurde gestört, und der %s-Zauber schlägt fehl."
+spell_trance_cancel = de \
+   "Du brichst deinen Versuch, den %s Zauber zu wirken, ab."
+spell_trance_complete = de \
+   "Der %s Zauber beginnt sich zu manifestieren!"
+spell_trance_fumble = de \
+      "Es fällt Dir schwer, den %s Zauber zu wirken."
 spell_disabled = de \
    "~g~BEine unbekannte Kraft raubt Dir die Zauberworte aus der Kehle bevor "
    "Du sie ganz aussprechen kannst."
@@ -103,6 +102,8 @@ spell_meditate_ratio_rsc = de \
 spell_Enchantment_type_default_rsc = de "Erzmagier"
 Spell_too_few_hp_rsc = de \
    "Du bist nicht stark genug um diesen Zauber zu benutzen."
+cannot_cast_cooldown = de \
+   "Du kannst %s nicht zaubern - der Zauber ist noch nicht bereit!"
 cannot_cast_on_phased_out = de \
    "Du kannst nichts auf %s zaubern, solange %s aus der Existenz getreten "
    "ist!"

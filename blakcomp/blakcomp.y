@@ -2,6 +2,7 @@
 #include "blakcomp.h"
 #include <stdio.h>
 %}
+%error-verbose
 
 %union {
 	int  int_val;		/* A numerical value */
@@ -63,7 +64,7 @@
 
 %token AND BREAK CLASSVARS CONSTANTS CONTINUE ELSE FOR IF IN IS LOCAL MESSAGES 
 %token NOT OR PROPAGATE PROPERTIES RESOURCES RETURN WHILE DO SWITCH CASE
-%token END EOL SEP INCLUDE FOREACH DEFAULT ISCLASS
+%token END EOL SEP INCLUDE FOREACH DEFAULT ISCLASS FIRST REST GETCLASS
 
 /* precedence of operators, lowest precedence first */
 %left OR
@@ -130,7 +131,8 @@ constants_list:
 
 constant_assign:
 		id '=' expression EOL	{ $$ = 0; make_constant_id($1, $3); }
-	|       INCLUDE fname EOL       { include_file($2); }
+	|	id '=' expression	{ $$ = 0; make_constant_id_noeol($1, $3); }
+	|	INCLUDE fname EOL       { include_file($2); }
 	|	error EOL		{ $$ = 0; } 
 	;
 
@@ -142,6 +144,7 @@ resource_list:
 resource:
 		id '=' resource_const EOL{ $$ = make_resource($1, $3, 0); }
 	|	id '=' language_const resource_const EOL{ $$ = make_resource($1, $4, $3); }
+	|	id '=' language_const resource_const{ $$ = make_resource_noeol($1, $4, $3); }
 	|	INCLUDE fname EOL { include_file($2); $$ = NULL; }
 	|	error EOL			{ $$ = NULL; }
 	;
@@ -371,6 +374,9 @@ expression:
 	|	id DEC_OP			{ $$ = make_un_op(POST_DEC_OP, make_expr_from_id($1)); }
 	|	DEC_OP id			{ $$ = make_un_op(PRE_DEC_OP, make_expr_from_id($2)); }
 	|	ISCLASS '(' expression ',' expression ')' { $$ = make_isclass_op($3, $5); }
+	|	FIRST '(' expression ')' { $$ = make_unarycall_op(FIRST_OP, $3); }
+	|	REST '(' expression ')' { $$ = make_unarycall_op(REST_OP, $3); }
+	|	GETCLASS '(' expression ')' { $$ = make_unarycall_op(GETCLASS_OP, $3); }
 	|	constant			{ $$ = make_expr_from_constant($1); }
 	|	literal				{ $$ = make_expr_from_constant($1); }
 	|	call				{ $$ = make_expr_from_call($1); }

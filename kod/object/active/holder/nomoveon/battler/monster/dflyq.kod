@@ -77,11 +77,11 @@ classvars:
    viTreasure_type = TID_DRAGONFLY
 
    viSpeed = SPEED_FAST
-   viAttack_type = ATCK_WEAP_PIERCE
+   viAttack_type = ATK_TYPE_PIERCE
    viLevel = 145
    viDifficulty = 6
-   // Attack range of 192, or 3 row/col.
-   viAttackRange = 192
+   viMeleeRange = 0
+   viFireRange = 192
    viVisionDistance = 18
    viKarma = 40
    viDefault_behavior = AI_FIGHT_AGGRESSIVE
@@ -97,6 +97,8 @@ classvars:
    vrSound_death = DragonFlyQueen_sound_death
 
    vrUnwanted_give = DragonFlyQueen_unwanted_give
+
+   vbCanSiphon = FALSE
 
 properties:
 
@@ -116,25 +118,19 @@ messages:
 
    Constructed()
    {
-      plResistances = [ [-ATCK_SPELL_COLD, 25 ],
-                        [-ATCK_SPELL_SHOCK, 40 ],
-                        [-ATCK_SPELL_FIRE, -20 ],
-                        [ATCK_WEAP_THRUST, 40 ],
-                        [ATCK_WEAP_NERUDITE, 25 ],
-                        [ATCK_WEAP_MAGIC, -10]
+      plResistances = [ [-SPL_TYPE_COLD, 25 ],
+                        [-SPL_TYPE_SHOCK, 40 ],
+                        [-SPL_TYPE_FIRE, -20 ],
+                        [ATK_TYPE_THRUST, 40 ],
+                        [ATK_TYPE_NERUDITE, 25 ],
+                        [ATK_TYPE_MAGIC, -10]
                       ];
 
       propagate;
    }
 
-   MonsterAttack(what = $)
-   {
-      Send(self,@DoSpit);
-
-      return;
-   }
-
-   DoSpit()
+   DoMissileAnimation()
+   "Handles ranged attack animation. Default is same as melee."
    {
       piAnimation = ANIM_ATTACK;
       piDrawEffectFlag = piDrawEffectFlag | OF_BOUNCING;
@@ -388,26 +384,46 @@ messages:
    {
       if poMaster <> $
       {
-         Send(self,@SetBehaviorFlag,#flag=AI_MOVE_FOLLOW_MASTER,#value=TRUE);
          Send(self,@SetBehaviorFlag,#flag=AI_FIGHT_AGGRESSIVE,#value=FALSE);
          Send(self,@SetBehaviorFlag,#flag=AI_FIGHT_NEWBIESAFE);
-         Send(self,@SetBehaviorFlag,#flag=AI_FIGHT_MONSTERS);
       }
 
       return;
    }
 
-   GetObjectFlags()
+   GetObjectFlags(what = $)
    {
-      if piAnimation = ANIM_NONE
+      local iFlags;
+
+      iFlags = 0;
+
+      if (poMaster = $
+         AND what <> $
+         AND IsClass(what,&User)
+         AND Send(what,@UserDisplayMobQuestActive,#what=self))
       {
-         return OF_ATTACKABLE | OF_OFFERABLE;
+         iFlags |= OF_MOBKILLQUEST;
       }
 
-      return OF_ATTACKABLE | OF_OFFERABLE | OF_BOUNCING;
+      if piAnimation = ANIM_NONE
+      {
+         return iFlags | OF_ATTACKABLE | OF_OFFERABLE;
+      }
+
+      return iFlags | OF_ATTACKABLE | OF_OFFERABLE | OF_BOUNCING;
    }
 
    CanMorphTo()
+   {
+      return FALSE;
+   }
+
+   CanBeWebbed()
+   {
+      return FALSE;
+   }
+
+   CanBeTangled()
    {
       return FALSE;
    }

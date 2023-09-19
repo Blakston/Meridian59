@@ -100,6 +100,36 @@ void CommandHelp(char *args)
 }
 /************************************************************************/
 /*
+ * CommandInvite: "(guild)invite" command ("invite" for less collisions)
+ */
+void CommandInvite(char *args)
+{
+   char *name = GetPlayerName(args, NULL);
+   if (!name)
+   {
+      debug(("Missing name to invite\n"));
+      return;
+   }
+
+   ID player = FindPlayerByName(name);
+
+   // 'Tell' error messages are similar enough to use here.
+   if (player == 0)
+   {
+      GameMessage(GetString(hInst, IDS_NOTELLNAME));
+      return;
+   }
+
+   if (player == INVALID_ID)
+   {
+      GameMessage(GetString(hInst, IDS_DUPLICATETELLNAME));
+      return;
+   }
+
+   RequestInvite(player);
+}
+/************************************************************************/
+/*
  * CommandTell: "tell" command
  */
 void CommandTell(char *args)
@@ -309,7 +339,37 @@ void CommandCast(char *args)
 
    PerformAction(A_CASTSPELL, sp);
 }
+/************************************************************************/
+/*
+ * CommandPerform: "perform" command; find skill name and perform it
+ */
+void CommandPerform(char *args)
+{
+   skill *sk;
+   char *skill_name;
 
+   skill_name = GetSkillName(args, NULL);
+   if (skill_name == NULL)
+   {
+      PerformAction(A_PERFORM, NULL);
+      return;
+   }
+
+   sk = FindSkillByName(skill_name);
+   if (sk == SKILL_NOMATCH)
+   {
+      GameMessage(GetString(hInst, IDS_NOSKILLNAME));
+      return;
+   }
+
+   if (sk == SKILL_AMBIGUOUS)
+   {
+      GameMessage(GetString(hInst, IDS_DUPLICATESKILLNAME));
+      return;
+   }
+
+   PerformAction(A_PERFORMSKILL, sk);
+}
 /************************************************************************/
 /*
  * TellGroup:  Send message to a group of people.
