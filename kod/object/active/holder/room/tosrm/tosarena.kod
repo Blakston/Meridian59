@@ -29,19 +29,12 @@ resources:
 
    TosArena_music = pk_fm.ogg
 
-   TosArena_commence_wav = forest1.ogg
    wind_sound_tosarena = ambcntry.ogg
    wind1_sound_tosarena = rs_wind.ogg
 
    TosArena_no_offer = \
       "The Watcher says, \"Spectators and combatants may not exchange goods "
       "during matches."
-   TosArena_no_attack = "You may not fight here unless you are a combatant."
-   TosArena_no_spell = "Only the combatants may cast spells."
-   TosArena_no_rescue = "No chickening out!"
-   TosArena_no_target = "That's awfully rude of you!"
-   TosArena_between_bouts = "No horseplay between bouts!"
-
    TosArena_cant_go = \
       "The Watcher says, \"You can't leave!  You're a combatant!\""
 
@@ -109,6 +102,9 @@ resources:
    TosArena_booth_command = "booth"
    TosArena_lock_command = "lock"
 
+   TosArena_doortoroom_locked = \
+      "You cannot enter the Watcher's announcement booth."
+
 classvars:
 
    vrName = name_TosArena
@@ -117,6 +113,8 @@ classvars:
    viTeleport_col = 13
 
    viPermanent_flags = ROOM_SAFE_DEATH
+
+   vbAccessibleForFollowers = FALSE
 
 properties:
 
@@ -210,6 +208,9 @@ messages:
       plExits = Cons([ 20, 7, RID_TOS_ARENA2, 29, 35, ROTATE_NONE ],plExits);
       plExits = Cons([ 21, 6, RID_TOS_ARENA2, 29, 35, ROTATE_NONE ],plExits);
       plExits = Cons([ 21, 7, RID_TOS_ARENA2, 29, 35, ROTATE_NONE ],plExits);
+
+      plExits = Cons([ 8, 21, ROOM_LOCKED_DOOR, TosArena_doortoroom_locked ],plExits);
+      plExits = Cons([ 8, 22, ROOM_LOCKED_DOOR, TosArena_doortoroom_locked ],plExits);
 
       propagate;
    }
@@ -825,6 +826,11 @@ messages:
       }
 
       return;
+   }
+   
+   CanDropMonsterLoot()
+   {
+      return FALSE;
    }
 
 end

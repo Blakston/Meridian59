@@ -108,6 +108,8 @@ Bool IsListNodeByID(int list_id)
 	return True;
 }
 
+// Note that the C call for First is now handled as an opcode in the
+// interpreter, so it doesn't call this message. Other places do call it.
 int First(int list_id)
 {
 	list_node *l;
@@ -116,6 +118,8 @@ int First(int list_id)
 	return (l? l->first.int_val : NIL);
 }
 
+// Note that the C call for Rest is now handled as an opcode in the
+// interpreter, so it doesn't call this message.
 int Rest(int list_id)
 {
 	list_node *l;
@@ -994,10 +998,11 @@ int SendListMessage(int list_id, bool ret_false, int message_id,
                     int num_parms, parm_node parms[])
 {
    list_node *l;
-   int obj_id = INVALID_OBJECT, return_int = True;
+   int obj_id = INVALID_OBJECT, return_int = True, temp_list_id;
    val_type ret_val;
 
    l = GetListNodeByID(list_id);
+
    if (!l)
    {
       bprintf("SendListMessage can't find list node %i\n", list_id);
@@ -1031,8 +1036,14 @@ int SendListMessage(int list_id, bool ret_false, int message_id,
       }
    }*/
 
+   // Reaquire list node in case list node realloc due to SendBlakodMessage
+   // clobbered variable. list_id already confirmed valid if we are here.
+   l = &list_nodes[list_id];
+
    while (l && l->rest.v.tag != TAG_NIL)
    {
+      // Get this list node to replace after call to SendBlakodMessage.
+      temp_list_id = l->rest.v.data;
       l = GetListNodeByID(l->rest.v.data);
       if (!l)
       {
@@ -1067,6 +1078,7 @@ int SendListMessage(int list_id, bool ret_false, int message_id,
             }
          }
       }*/
+      l = &list_nodes[temp_list_id];
    }
 
    return return_int;
@@ -1077,7 +1089,7 @@ int SendFirstListMessage(int list_id, bool ret_false, int message_id,
                          int num_parms, parm_node parms[])
 {
    list_node *l, *first;
-   int return_int = True, obj_id = INVALID_OBJECT;
+   int return_int = True, obj_id = INVALID_OBJECT, temp_list_id;
    val_type ret_val;
 
    l = GetListNodeByID(list_id);
@@ -1124,8 +1136,14 @@ int SendFirstListMessage(int list_id, bool ret_false, int message_id,
       }*/
    }
 
+   // Reaquire list node in case list node realloc due to SendBlakodMessage
+   // clobbered variable. list_id already confirmed valid if we are here.
+   l = &list_nodes[list_id];
+
    while (l && l->rest.v.tag != TAG_NIL)
    {
+      // Get this list node to replace after call to SendBlakodMessage.
+      temp_list_id = l->rest.v.data;
       l = GetListNodeByID(l->rest.v.data);
       if (!l)
       {
@@ -1173,6 +1191,7 @@ int SendFirstListMessage(int list_id, bool ret_false, int message_id,
                }
             }
          }*/
+         l = &list_nodes[temp_list_id];
       }
    }
 
@@ -1184,7 +1203,7 @@ int SendNthListMessage(int list_id, int position, bool ret_false,
                        int message_id, int num_parms, parm_node parms[])
 {
    list_node *l;
-   int obj_id = INVALID_OBJECT, return_int = True;
+   int obj_id = INVALID_OBJECT, return_int = True, temp_list_id;
    val_type obj_val, ret_val;
 
    l = GetListNodeByID(list_id);
@@ -1228,8 +1247,14 @@ int SendNthListMessage(int list_id, int position, bool ret_false,
       }*/
    }
 
+   // Reaquire list node in case list node realloc due to SendBlakodMessage
+   // clobbered variable. list_id already confirmed valid if we are here.
+   l = &list_nodes[list_id];
+
    while (l && l->rest.v.tag != TAG_NIL)
    {
+      // Get this list node to replace after call to SendBlakodMessage.
+      temp_list_id = l->rest.v.data;
       l = GetListNodeByID(l->rest.v.data);
       if (!l)
       {
@@ -1271,6 +1296,7 @@ int SendNthListMessage(int list_id, int position, bool ret_false,
             }
          }
       }*/
+      l = &list_nodes[temp_list_id];
    }
 
    return return_int;
@@ -1281,7 +1307,7 @@ int SendListMessageByClass(int list_id, int class_id, bool ret_false,
                            int message_id, int num_parms, parm_node parms[])
 {
    list_node *l;
-   int obj_id = INVALID_OBJECT, return_int = True;
+   int obj_id = INVALID_OBJECT, return_int = True, temp_list_id;
    val_type ret_val;
    object_node *o = NULL;
    class_node *c;
@@ -1332,8 +1358,14 @@ int SendListMessageByClass(int list_id, int class_id, bool ret_false,
       } while (c != NULL);
    }
 
+   // Reaquire list node in case list node realloc due to SendBlakodMessage
+   // clobbered variable. list_id already confirmed valid if we are here.
+   l = &list_nodes[list_id];
+
    while (l && l->rest.v.tag != TAG_NIL)
    {
+      // Get this list node to replace after call to SendBlakodMessage.
+      temp_list_id = l->rest.v.data;
       l = GetListNodeByID(l->rest.v.data);
       if (!l)
       {
@@ -1380,6 +1412,8 @@ int SendListMessageByClass(int list_id, int class_id, bool ret_false,
          }
          c = c->super_ptr;
       } while (c != NULL);
+
+      l = &list_nodes[temp_list_id];
    }
 
    return return_int;
@@ -1390,7 +1424,7 @@ int SendFirstListMessageByClass(int list_id, int class_id, bool ret_false,
                                 int message_id, int num_parms, parm_node parms[])
 {
    list_node *l, *first;
-   int obj_id = INVALID_OBJECT, return_int = True;
+   int obj_id = INVALID_OBJECT, return_int = True, temp_list_id;
    val_type ret_val;
    object_node *o = NULL;
    class_node *c;
@@ -1455,8 +1489,14 @@ int SendFirstListMessageByClass(int list_id, int class_id, bool ret_false,
       }
    }
 
+   // Reaquire list node in case list node realloc due to SendBlakodMessage
+   // clobbered variable. list_id already confirmed valid if we are here.
+   l = &list_nodes[list_id];
+
    while (l && l->rest.v.tag != TAG_NIL)
    {
+      // Get this list node to replace after call to SendBlakodMessage.
+      temp_list_id = l->rest.v.data;
       l = GetListNodeByID(l->rest.v.data);
       if (!l)
       {
@@ -1518,6 +1558,8 @@ int SendFirstListMessageByClass(int list_id, int class_id, bool ret_false,
          }
          c = c->super_ptr;
       } while (c != NULL);
+
+      l = &list_nodes[temp_list_id];
    }
 
    return return_int;
@@ -1528,7 +1570,7 @@ int SendNthListMessageByClass(int list_id, int position, int class_id, bool ret_
                               int message_id, int num_parms, parm_node parms[])
 {
    list_node *l;
-   int obj_id = INVALID_OBJECT, return_int = True;
+   int obj_id = INVALID_OBJECT, return_int = True, temp_list_id;
    val_type ret_val, obj_val;
    object_node *o = NULL;
    class_node *c;
@@ -1589,8 +1631,14 @@ int SendNthListMessageByClass(int list_id, int position, int class_id, bool ret_
       }
    }
 
+   // Reaquire list node in case list node realloc due to SendBlakodMessage
+   // clobbered variable. list_id already confirmed valid if we are here.
+   l = &list_nodes[list_id];
+
    while (l && l->rest.v.tag != TAG_NIL)
    {
+      // Get this list node to replace after call to SendBlakodMessage.
+      temp_list_id = l->rest.v.data;
       l = GetListNodeByID(l->rest.v.data);
       if (!l)
       {
@@ -1645,6 +1693,8 @@ int SendNthListMessageByClass(int list_id, int position, int class_id, bool ret_
          }
          c = c->super_ptr;
       } while (c != NULL);
+
+      l = &list_nodes[temp_list_id];
    }
 
    return return_int;

@@ -65,15 +65,16 @@ classvars:
    vrDesc = DragonFlyPet_desc_rsc
    vrDead_icon = DragonFlyPet_dead_icon_rsc
    vrDead_name = DragonFlyPet_dead_name_rsc
+   vrKocName = DragonFlyPet_koc_name_rsc
 
    viTreasure_type = TID_NONE
 
    viSpeed = SPEED_AVERAGE
-   viAttack_type = ATCK_WEAP_PIERCE
+   viAttack_type = ATK_TYPE_PIERCE
    viLevel = 120
    viDifficulty = 6
-   // Attack range of 192, or 3 row/col.
-   viAttackRange = 192
+   viMeleeRange = 0
+   viFireRange = 192
    viVisionDistance = 18
    viKarma = 40
    viDefault_behavior = AI_FIGHT_AGGRESSIVE | AI_FIGHT_NEWBIESAFE
@@ -85,6 +86,8 @@ classvars:
    vrSound_miss = DragonFlyPet_sound_miss
    vrSound_aware = DragonFlyPet_sound_aware
    vrSound_death = DragonFlyPet_sound_death
+
+   vbCanSiphon = FALSE
 
 properties:
 
@@ -98,25 +101,19 @@ messages:
 
    Constructed()
    {
-      plResistances = [ [-ATCK_SPELL_COLD, 25 ],
-                        [-ATCK_SPELL_SHOCK, 40 ],
-                        [-ATCK_SPELL_FIRE, -20 ],
-                        [ATCK_WEAP_THRUST, 40 ],
-                        [ATCK_WEAP_NERUDITE, 25 ],
-                        [ATCK_WEAP_MAGIC, -10]
+      plResistances = [ [-SPL_TYPE_COLD, 25 ],
+                        [-SPL_TYPE_SHOCK, 40 ],
+                        [-SPL_TYPE_FIRE, -20 ],
+                        [ATK_TYPE_THRUST, 40 ],
+                        [ATK_TYPE_NERUDITE, 25 ],
+                        [ATK_TYPE_MAGIC, -10]
                       ];
 
       propagate;
    }
 
-   MonsterAttack(what = $)
-   {
-      Send(self,@DoSpit);
-
-      return;
-   }
-
-   DoSpit()
+   DoMissileAnimation()
+   "Handles ranged attack animation. Default is same as melee."
    {
       piAnimation = ANIM_ATTACK;
       piDrawEffectFlag = piDrawEffectFlag | OF_BOUNCING;
@@ -289,14 +286,26 @@ messages:
       return FALSE;
    }
 
-   GetObjectFlags()
+   GetObjectFlags(what = $)
    {
-      if piAnimation = ANIM_NONE
+      local iFlags;
+
+      iFlags = 0;
+
+      if (poMaster = $
+         AND what <> $
+         AND IsClass(what,&User)
+         AND Send(what,@UserDisplayMobQuestActive,#what=self))
       {
-         return OF_ATTACKABLE;
+         iFlags |= OF_MOBKILLQUEST;
       }
 
-      return OF_ATTACKABLE | OF_BOUNCING;
+      if piAnimation = ANIM_NONE
+      {
+         return iFlags | OF_ATTACKABLE;
+      }
+
+      return iFlags | OF_ATTACKABLE | OF_BOUNCING;
    }
 
    SetColor(iColor=PT_GRAY_TO_DGREEN)
@@ -308,6 +317,16 @@ messages:
       }
 
       return;
+   }
+
+   CanBeWebbed()
+   {
+      return FALSE;
+   }
+
+   CanBeTangled()
+   {
+      return FALSE;
    }
 
 end

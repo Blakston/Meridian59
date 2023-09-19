@@ -49,7 +49,7 @@ void CharactersDestroy(Character *c, WORD num_characters);
 
 #define NUM_CHAR_STATS 6
 
-#define SPELL_POINTS_INITIAL   45   // Initial # of available spell/skill points
+#define SPELL_POINTS_INITIAL   125   // Initial # of available spell/skill points
 #define STAT_POINTS_INITIAL    50   // Initial # of available stat points
 
 typedef struct {
@@ -92,8 +92,8 @@ typedef enum {
    SS_RIIJA = 5,
    SS_JALA = 6,
    SS_DM_COMMAND = 7,
-   SKS_FENCING = 10,
-   SKS_BRAWLING = 11,
+   SKS_WEAPONCRAFT = 10,
+   SKS_DM = 11,
    SKS_THIEVERY = 12,
 } School;
 
@@ -124,7 +124,7 @@ CharAppearance *CharAppearanceDestroy(CharAppearance *ap);
 void CharTabPageCommand(HWND hwnd, int id, HWND hwndCtl, UINT codeNotify);
 Bool VerifySettings(void);
 void CharInfoValid(void);
-void CharInfoInvalid(void);
+void CharInfoInvalid(BYTE err_num);
 
 BOOL CALLBACK CharNameDialogProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam);
 void CharNameGetChoices(char *name, char *desc);

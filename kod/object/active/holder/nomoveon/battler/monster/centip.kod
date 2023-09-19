@@ -45,7 +45,7 @@ classvars:
    viTreasure_type = TID_WIMPY_MEDIUM
    viDefault_behavior = AI_FIGHT_KARMA_AGGRESSIVE
    viSpeed = SPEED_FAST
-   viAttack_type = ATCK_WEAP_BITE
+   viAttack_type = ATK_TYPE_BITE
 
    viLevel = 30
    viDifficulty = 5
@@ -58,6 +58,16 @@ classvars:
    vrSound_aware = centipede_sound_aware
    vrSound_death = centipede_sound_death
 
+   viBleedChance = 5
+   viBleedStrength = 1000
+   viBleedDuration = 5000
+
+   vbCanSiphon = FALSE
+   vbCanBleed = FALSE
+
+   // Quite used to crawling around in dark places.
+   viNightVision = 100
+
 properties:
 
    piAnimation = ANIM_NONE
@@ -66,21 +76,12 @@ messages:
 
    Constructed()
    {
-      plResistances = [ [-ATCK_SPELL_FIRE, 40 ],
-                        [ATCK_WEAP_SLASH, 20],
-                        [ATCK_WEAP_MAGIC, -20],
-                        [-ATCK_SPELL_SHOCK, -20] ];
+      plResistances = [ [-SPL_TYPE_FIRE, 40 ],
+                        [ATK_TYPE_SLASH, 20],
+                        [ATK_TYPE_MAGIC, -20],
+                        [-SPL_TYPE_SHOCK, -20] ];
 
       propagate;
-   }
-
-   MonsterAttack(what = $)
-   {
-      piAnimation = ANIM_ATTACK;
-      Send(poOwner,@SomethingChanged,#what=self);
-      piAnimation = ANIM_NONE;
-
-      return;
    }
 
    SendLookAnimation()

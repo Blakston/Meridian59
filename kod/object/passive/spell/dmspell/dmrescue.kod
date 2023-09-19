@@ -29,6 +29,7 @@ resources:
 classvars:
 
    vrName = dmrescue_name_rsc
+   vrDesc = dmrescue_desc_rsc
    vrIcon = dmrescue_icon_rsc
 
    viSpell_num = SID_DMRESCUE
@@ -42,31 +43,20 @@ messages:
       return 1;
    }
 
-   CastSpell(who=$,lTargets=$)
+   DoSpellEffects(who=$,lTargets=$)
    {
-      local i, j, oRoom, oHell;
+      local i;
 
-      foreach j in lTargets
+      foreach i in lTargets
       {
-         i = j;
-
          if IsClass(i,&LogoffGhost)
          {
-            i = Send(i,@GetGhostedPlayer);
-            Send(i,@AdminGoToSafety);
-            oRoom = Send(SYS,@FindRoomByNum,#num=Send(i,@GetSaveRoom));
-            Send(SYS,@UtilGoToSquare,#what=j,#where=oRoom,
-                 #row=Send(i,@GetSaveRow),#col=Send(i,@GetSaveCol));
-
-            // If they have the damned string, this will remove it.
-            Send(i,@RemoveHonorString,#string=damn_last_annoyed);
+            Send(Send(i,@GetGhostedPlayer),@AdminGoToSafety);
+            Send(i,@Delete);
          }
          else if IsClass(i,&Player)
          {
             Send(i,@AdminGoToSafety);
-
-            // If they have the damned string, this will remove it.
-            Send(i,@RemoveHonorString,#string=damn_last_annoyed);
             Send(who,@MsgSendUser,#message_rsc=dmrescue_hit_rsc,
                   #parm1=Send(i,@GetDef),#parm2=Send(i,@GetTrueName));
          }
@@ -78,7 +68,7 @@ messages:
          }
       }
 
-      propagate;
+      return TRUE;
    }
 
 end

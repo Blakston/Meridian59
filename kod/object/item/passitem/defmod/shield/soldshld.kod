@@ -593,10 +593,16 @@ messages:
 
    // Copied from DefenseModifier superclass, ignores shield's Block
    //  requirement.
-   ModifyDefenseDamage(who = $,what = $,damage = $,atype = 0,aspell = 0)
+   ModifyDefenseDamage(who = $,what = $,damage = $,atype = 0,stype = 0)
    "Affects damage done to owner."
    {
       local iDamageReduce;
+
+      // Don't bother with 0 damage hits.
+      if (damage = 0)
+      {
+         return damage;
+      }
 
       iDamageReduce = 0;
       if piDamage_reduce <> 0
@@ -605,7 +611,7 @@ messages:
          iDamageReduce = bound(iDamageReduce,0,(damage-100));
       }
 
-      if aspell <> 0
+      if stype <> 0
       {
          // Reduce damage if part of the damage is spell
          if atype <> 0
@@ -836,6 +842,6 @@ messages:
 
       return;
    }
-
+   
 end
 ////////////////////////////////////////////////////////////////////////////////

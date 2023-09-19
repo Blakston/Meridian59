@@ -48,16 +48,21 @@ classvars:
    vrDead_name = EvilEnt_dead_name_rsc
 
    viTreasure_type = TID_ENT
-   viAttack_type = ATCK_WEAP_WHIP
+   viAttack_type = ATK_TYPE_WHIP
    viSpeed = SPEED_NONE
    viAttributes = MOB_NOMOVE
    viDefault_behavior = AI_NOMOVE | AI_FIGHT_KARMA_AGGRESSIVE
-   viLevel = 50
-   viDifficulty = 4
+   viLevel = 85
+   viDifficulty = 6
    viVisionDistance = 14
-   viKarma = -40
+   viKarma = -60
    viCashmin = 125
    viCashmax = 500
+
+   viMeleePriority = 1100
+
+   viPowerLevel = 100
+
    vrSound_hit = EvilEnt_sound_hit
    vrSound_miss = EvilEnt_sound_miss
    vrSound_aware = EvilEnt_sound_aware
@@ -66,8 +71,9 @@ classvars:
    vrLeaves = EvilEnt_leaves_sparse_rsc
    vrDead_leaves = EvilEnt_dead_leaves_sparse_rsc
 
-   // 1 in x chance to cast a spell.
-   viSpellChance = 8
+   vbCanPoison = FALSE
+   vbCanBleed = FALSE
+   vbCanFatigue = FALSE
 
 properties:
 
@@ -107,25 +113,16 @@ messages:
 
    Constructed()
    {
-      plResistances = [ [-ATCK_SPELL_COLD, 50 ],
-                        [ATCK_WEAP_BLUDGEON, 50 ],
-                        [ATCK_WEAP_SLASH, -10 ],
-                        [-ATCK_SPELL_FIRE, -10 ] ];
+      plResistances = [ [-SPL_TYPE_COLD, 50 ],
+                        [ATK_TYPE_BLUDGEON, 50 ],
+                        [ATK_TYPE_SLASH, -10 ],
+                        [-SPL_TYPE_FIRE, -10 ] ];
 
-      plSpellBook = [ [SID_LIGHTNING, 5, 100] ];
+      plActions = [ [SID_LIGHTNING] ];
 
       plReputationEnemies = [REP_UNDEAD];
 
       propagate;
-   }
-
-   MonsterAttack(what = $)
-   {
-      piAnimation = ANIM_ATTACK;
-      Send(poOwner,@SomethingChanged,#what=self);
-      piAnimation = ANIM_NONE;
-
-      return;
    }
 
    SendMoveAnimation()
@@ -200,18 +197,20 @@ messages:
       return;
    }
 
-   AssessDamage(aSpell=0)
+   AssessDamage(stype=0)
    {
       // Living trees get more dangerous if you burn 'em.
 
-      if (aSpell & ATCK_SPELL_FIRE) AND piSpellChance > 2
+      if (stype& SPL_TYPE_FIRE)
       {
-         piSpellChance = piSpellChance - 1;
+         piSpellPower += 20;
+         piSpellPower = Bound(piSpellPower,$,99);
       }
 
       propagate;
    }
 
+   /*
    HitSideEffect(what = $, who=$)
    {
       local oSpell;
@@ -227,12 +226,14 @@ messages:
          }
          else
          {
-            Send(oSpell,@DoSpell,#what=self,#oTarget=what,#iSpellPower=50);
+            Send(oSpell,@DoSpellEffects,#who=self,#lTargets=[what],
+                  #iSpellPower=50);
          }
       }
 
       return;
    }
+   */
 
    CreateDeadBody(killer=$)
    {

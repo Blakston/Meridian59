@@ -6,11 +6,11 @@ TOPDIR=..
 # ----------------------------------------------------------------------
 # Additional compiler flags (see common.mak)
 # /TP           Compile as C++ code
-# /arch:SSE     Use SSE instructions (VS2013+ default to SSE2)
+# /arch:SSE2    Use SSE2 instructions (VS2013+ default to SSE2)
 # /DBLAKCLIENT  Specific for m59 client
 # -I$(OUTDIR)   Need to put build dir in include path, because trig and palette
 #               generated files are there.
-CFLAGS = $(CFLAGS) /arch:SSE /TP /DBLAKCLIENT /D_USING_V110_SDK71_ -I$(OUTDIR)  
+CFLAGS = $(CFLAGS) /arch:SSE2 /TP /DBLAKCLIENT /D_USING_V110_SDK71_ -I$(OUTDIR)  
 
 # ----------------------------------------------------------------------
 # Additional linker flags (see common.mak)
@@ -26,7 +26,7 @@ LIBS = \
     ws2_32.lib comctl32.lib advapi32.lib \
     winmm.lib wininet.lib ole32.lib \
     d3d9.lib dxerr.lib d3dx9.lib irrklang.lib \
-    rscload.lib libpng.lib zlib.lib libarchive.lib
+    rscload.lib libpng.lib zlib.lib
 
 DEFFILE  = $(SOURCEDIR)\client.def
 
@@ -60,6 +60,7 @@ OBJS = \
     $(OUTDIR)\about.obj \
     $(OUTDIR)\login.obj \
     $(OUTDIR)\srvrstr.obj \
+    $(OUTDIR)\quest.obj \
     $(OUTDIR)\effect.obj \
     $(OUTDIR)\bitmap.obj \
     $(OUTDIR)\download.obj \
@@ -73,7 +74,6 @@ OBJS = \
     $(OUTDIR)\crc.obj \
     $(OUTDIR)\xlat.obj \
     $(OUTDIR)\rops.obj \
-    $(OUTDIR)\guest.obj \
     $(OUTDIR)\profane.obj \
     $(OUTDIR)\object.obj \
     $(OUTDIR)\graphics.obj \
@@ -122,13 +122,17 @@ OBJS = \
     $(OUTDIR)\ping.obj \
     $(OUTDIR)\objdraw.obj \
     $(OUTDIR)\lagbox.obj \
+    $(OUTDIR)\timebox.obj \
+    $(OUTDIR)\fpsbox.obj \
     $(OUTDIR)\regexpr.obj \
     $(OUTDIR)\fixed.obj \
+    $(OUTDIR)\d3dtexcache.obj \
     $(OUTDIR)\d3dcache.obj \
     $(OUTDIR)\d3ddriver.obj \
     $(OUTDIR)\d3dlighting.obj \
     $(OUTDIR)\d3dparticle.obj \
     $(OUTDIR)\d3drender.obj \
+    $(OUTDIR)\d3dmaterial.obj \
     $(OUTDIR)\matrix.obj
 
 

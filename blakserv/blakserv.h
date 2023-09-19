@@ -32,9 +32,9 @@
 #define INVALID_DSTR -1
 #define NO_SUPERCLASS 0
 
-#define MAX_DEPTH 2000
+#define MAX_DEPTH 800
 
-#define BOF_VERSION 9
+#define BOF_VERSION 11
 
 // enable constants such as M_PI from math.h
 #define _USE_MATH_DEFINES
@@ -51,34 +51,28 @@ enum
    GARBAGE_MSG = 8,
    LOADED_GAME_MSG = 9,
    CONSTRUCTOR_MSG = 10,
+   FIND_USER_BY_STRING_MSG = 11,
    NUMBER_STUFF_PARM = 12,
    GARBAGE_DONE_MSG = 13,
    STRING_PARM = 14,
    SYSTEM_STRING_MSG = 15,
    USER_NAME_MSG = 16,
-   USER_ICON_MSG = 17,
-   SEND_CHAR_INFO_MSG = 18,
+   IS_FIRST_TIME_MSG = 17,
+   DELETE_MSG = 18,
    NEW_HOUR_MSG = 19,
-   GUEST_CLASS = 20,
+   SYSTEM_ENTER_GAME_MSG = 20,
    NAME_PARM = 21,
-   ICON_PARM = 22,
-   ADMIN_CLASS = 23,
-   SYSTEM_ENTER_GAME_MSG = 24,
-   FIND_USER_BY_INTERNET_NAME_MSG = 25,
-   RECEIVE_INTERNET_MAIL_MSG = 26,
-   PERM_STRING_PARM = 27,
-   IS_FIRST_TIME_MSG = 28,
-   DELETE_MSG = 29,
-   TIMER_PARM = 30,
-   TYPE_PARM = 31,
-   DM_CLASS = 32,
-   FIND_USER_BY_STRING_MSG = 33,
-   CREATOR_CLASS = 34,
-   SETTINGS_CLASS = 35,
-   REALTIME_CLASS = 36,
-   EVENTENGINE_CLASS = 37,
-   ESCAPED_CONVICT_CLASS = 38,
-   MAX_BUILTIN_CLASS = 38
+   ADMIN_CLASS = 22,
+   TIMER_PARM = 23,
+   TYPE_PARM = 24,
+   DM_CLASS = 25,
+   CREATOR_CLASS = 26,
+   SETTINGS_CLASS = 27,
+   REALTIME_CLASS = 28,
+   EVENTENGINE_CLASS = 29,
+   ESCAPED_CONVICT_CLASS = 30,
+   TEST_CLASS = 31,
+   MAX_BUILTIN_CLASS = 31
 
    // To add other C-accessible KOD identifiers,
    // see the BLAKCOMP's table of BuiltinIds[].
@@ -168,6 +162,7 @@ enum
 #include <sys/stat.h>
 #include <time.h>
 #include <math.h>
+#include <ppl.h>
 
 #include "btime.h"
 
@@ -198,6 +193,14 @@ typedef struct
    char data[LEN_MAX_CLIENT_MSG];
 } client_msg;
 
+typedef struct
+{
+   int object_id;
+   int message_id;
+   int year, month, day, hour, minute, second;
+   val_type parm1, parm2, parm3, parm4;
+} blakod_reg_callback;
+
 /* in main.c */
 extern DWORD main_thread_id;
 void MainReloadGameData();
@@ -215,6 +218,8 @@ char * GetLastErrorStr();
 #include "stringinthash.h"
 #include "intstringhash.h"
 
+#include "geometry.h"
+
 #include "blakres.h"
 #include "channel.h"
 #include "kodbase.h"
@@ -231,6 +236,7 @@ char * GetLastErrorStr();
 #include "system.h"
 #include "loadrsc.h"
 #include "loadgame.h"
+#include "astar.h"
 #include "roofile.h"
 #include "roomdata.h"
 #include "files.h"

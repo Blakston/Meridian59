@@ -45,7 +45,7 @@ classvars:
    vrDead_name = zombie_dead_name_rsc
 
    viSpeed = SPEED_VERY_SLOW
-   viAttack_type = ATCK_WEAP_SLASH
+   viAttack_type = ATK_TYPE_SLASH
    viDefault_behavior = AI_FIGHT_KARMA_AGGRESSIVE | AI_MOVE_FLEE_FRIGHTENERS
 
    vbDementChance = 10 // 1 in x
@@ -60,16 +60,27 @@ classvars:
    vrSound_aware = zombie_sound_aware
    vrSound_death = zombie_sound_death
 
+   vbCanPoison = FALSE
+   vbCanBleed = FALSE
+   vbCanSiphon = FALSE
+   vbCanFatigue = FALSE
+
+   viPoisonChance = 10
+   viPoisonStrength = 1000
+   viPoisonDuration = 5000
+   viPoisonHealth = 100
+   viPoisonVigor = 50
+
+   // Quite used to dark places.
+   viNightVision = 100
+
 properties:
 
    // our private data
 
    viTreasure_type = TID_ZOMBIE
    viLevel = 55
-
    piAnimation = ANIM_NONE
-
-   vbSummoned = FALSE
 
    ptRevertControl = $
 
@@ -79,8 +90,8 @@ messages:
 
    Constructed()
    {
-      plResistances = [ [-ATCK_SPELL_UNHOLY, 50 ],
-                        [-ATCK_SPELL_HOLY, -25 ] ];
+      plResistances = [ [-SPL_TYPE_UNHOLY, 50 ],
+                        [-SPL_TYPE_HOLY, -25 ] ];
 
       plReputationEnemies = [REP_FAROL];
 
@@ -102,19 +113,9 @@ messages:
       propagate;
    }
 
-   MonsterAttack(what = $)
-   {
-      piAnimation = ANIM_ATTACK;
-      Send(poOwner,@SomethingChanged,#what=self);
-      piAnimation = ANIM_NONE;
-
-      return;
-   }
-
    SendLookAnimation()
    {
-      AddPacket(1,ANIMATE_CYCLE);
-      AddPacket(4,200,2,2,2,3);
+      AddPacket(1,ANIMATE_CYCLE, 4,200,2,2,2,3);
 
       return;
    }
@@ -185,11 +186,22 @@ messages:
          }
          else
          {
-            Send(oSpell,@DoSpell,#what=self,#oTarget=what,#iSpellPower=15);
+            Send(oSpell,@DoSpellEffects,#who=self,#lTargets=[what],
+                  #iSpellPower=15);
          }
       }
 
       return;
+   }
+
+   IsAlliedClass(what=$)
+   {
+      if Send(what,@IsUndead)
+      {
+         return TRUE;
+      }
+
+      propagate;
    }
 
 end

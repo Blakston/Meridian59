@@ -44,21 +44,28 @@ classvars:
 
    viTreasure_type = TID_RAT_KING
 
-   viSpeed = SPEED_FAST
-   viAttack_type = ATCK_WEAP_CLAW
+   viAttack_type = ATK_TYPE_CLAW
    viAttributes = 0
-   viLevel = 60
-   viDifficulty = 5
-   viVisionDistance = 1
-   viKarma = 0
+   viLevel = 100
+   viDifficulty = 6
+   viVisionDistance = 10
+   viKarma = -60
    viDefault_behavior = AI_FIGHT_AGGRESSIVE | AI_FIGHT_SWITCHALOT
    viCashmin = 150
-   viCashmax = 250
+   viCashmax = 1250
 
    vrSound_hit = giantratksound_hit
    vrSound_miss = giantratksound_miss
    vrSound_aware = giantratksound_aware
    vrSound_death = giantratksound_death
+
+   viPoisonChance = 25
+   viPoisonStrength = 2000
+   viPoisonDuration = 30000
+   viPoisonVigor = 25
+
+   viBleedStrength = 2000
+   viBleedDuration = 8000
 
 properties:
 
@@ -66,20 +73,10 @@ messages:
 
    Constructed()
    {
-      piHit_Points = 700 * 100;
-      piMax_Hit_Points = 700;                  
-                        
-      propagate;
-   }
+      piHealth = 700 * 100;
+      piMax_Health = 700;
 
-   IsAlly(target = $)
-   {
-      if IsClass(target,&GiantRat)
-      {
-         return TRUE;
-      }
-   
-      return FALSE;
+      propagate;
    }
 
 end

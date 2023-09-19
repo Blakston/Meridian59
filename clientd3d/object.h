@@ -45,7 +45,9 @@ typedef struct {
                                            // (Used for falling and climbing)
    float     progress;                     // 0 = source; 1 = destination
    float     increment;                    // Amount by which progress increments per millisecond
+   float     incrementstart;               // First/unmodified increment
    float     speed;							// keep history of speed to allow for auto correction
+   float     speed_factor;                 // keep history of applied speed_factor to smooth over time
    Animate   animate;                      // Object animation when moving
    list_type overlays;                     // Overlays (and animation) to use when moving
    Bool      move_animating;               // True when move animation is being displayed
@@ -106,6 +108,12 @@ typedef struct {
    Bool        visible;           // True when object is visible in current frame
    int			boundingHeightAdjust;	// adjustment in height from overlays
 } room_contents_node;
+
+typedef struct {
+   object_node obj;
+   char desc[4096];
+   char secondary_desc[4096];
+} quest_ui_node;
 
 M59EXPORT Bool CompareIdObject(void *idnum, void *obj);
 Bool CompareId(void *id1, void *id2);

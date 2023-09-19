@@ -11,7 +11,7 @@
 RadiusEnchantment is Spell
 
 // [timer, spell object, state, spellpower]
-// state is [caster, target, range, duration, spell-specific stuff]
+// state is [caster, source/target, range, duration, spell-specific stuff]
 // If you are enchanted with a radius enchant and are the target, the radius
 // emanates from you. If you are not the target, you get the spell effects
 // (based on relationship to the caster) but not the light effect.
@@ -24,13 +24,11 @@ resources:
 
    include radiusench.lkod
 
-   radench_already_enchanted_rsc = "You are already enchanted."
    radench_already_cast = "You are already maintaining that radius enchantment."
    radench_on_rsc = "A circle of magic expands outward from you."
    radench_on_other_rsc = "A circle of magic expands outward from %s%s."
    radench_off_other_rsc = "The circle of magic maintained by %s%s collapses."
    radench_off_caster_rsc = "Your circle of magic collapses."
-   radench_success_rsc = "You enchant %s%s."
    radench_need_instrument = "You need an instrument!"
 
    radench_not_guilded = "You must be guilded to cast that spell here."
@@ -71,9 +69,9 @@ classvars:
    viSchool = SS_JALA
    viNeedInstrument = FALSE
 
-   viMana = 5
-   viManaDrain = 3
-   viDrainTime = 5000
+   viMana = 5                   // Initial mana cost of the spell.
+   viManaDrain = 600            // Mana drained per second (10^3)
+   viRegenerationEffect = FALSE // If true, will call UpdateRates() in battler.
    viPostCast_time = 1
    viBaseRange = 5 * FINENESS
 
@@ -132,8 +130,7 @@ messages:
       // Could be cancelling the current enchantment, if cast with
       // no targets or cast on self.
       if (vbCanCancelEnchantment
-         AND (oTarget = $
-            OR oTarget = who))
+         AND (oTarget = $ OR oTarget = who))
       {
          foreach i in Send(who,@GetRadiusEnchantments)
          {
@@ -142,8 +139,7 @@ messages:
                lState = Nth(i,3);
                if First(lState) = who
                {
-                  Send(self,@BreakTrance,#who=who,#state=lState,
-                        #event=EVENT_STEER);
+                  Send(self,@BreakTrance,#who=who,#state=lState,#event=EVENT_CANCEL);
 
                   return FALSE;
                }
@@ -235,9 +231,9 @@ messages:
       propagate;
    }
 
-   CastSpell(who=$,iSpellPower=0,lTargets=$,bItemCast=FALSE)
+   DoSpellEffects(who=$,iSpellPower=0,lTargets=$,bItemCast=FALSE)
    {
-      local oTarget, i, each_obj, lType, lState, iDuration, iRange, lOldState;
+      local oTarget, i, each_obj, lType, lState, iRange, lOldState, iDuration;
 
       lType = [self,viDefensive,viOffensive,viResistanceType];
 
@@ -255,7 +251,7 @@ messages:
          // Sanity check.
          if (oTarget = $)
          {
-            Debug("Got $ target in CastSpell for ",self);
+            Debug("Got $ target in DoSpellEffects for ",self);
 
             return FALSE;
          }
@@ -297,17 +293,17 @@ messages:
             else
             {
                Send(each_obj,@MsgSendUser,#message_rsc=vrEnchantmentOnOther,
-                     #parm1=Send(who,@GetDef),#parm2=Send(who,@GetName));
+                     #parm1=Send(who,@GetCapDef),#parm2=Send(who,@GetName));
             }
          }
       }
 
+      iDuration = Send(self,@GetDuration,#iSpellPower=iSpellPower);
+
       // who is the caster, target is the target (sometimes the same as who).
       iRange = Send(self,@CalculateRange,#who=who,#iSpellPower=iSpellPower);
-      iDuration = Send(self,@GetDuration,#iSpellPower=iSpellPower);
-      lState = [ who, oTarget, iRange, iDuration,
-                  Send(self,@GetStateValue,#iSpellpower=iSpellpower,#who=who,
-                        #target=oTarget)];
+      lState = [ who, oTarget, iRange, iDuration, Send(self,@GetStateValue,
+               #iSpellpower=iSpellpower,#who=who,#target=oTarget)];
 
       Send(oTarget,@StartEnchantment,#what=self,#state=lState,#time=iDuration,
             #lastcall=Send(self,@GetLastCall),#addicon=Send(self,@GetAddicon),
@@ -321,7 +317,7 @@ messages:
       Send(self,@StartNewRadiusEnchantment,#who=who,#oSource=oTarget,
             #iSpellPower=iSpellPower,#state=lState);
 
-      propagate;
+      return TRUE;
    }
 #endregion Casting Infrastructure
 
@@ -329,41 +325,11 @@ messages:
    StartPeriodicEnchantment(who=$,state=$,iSpellPower=0)
    "Drain mana, heal targets in range etc."
    {
-      local iDuration, iAbility, oSpell, oCaster, i, each_obj;
+      local iDuration, oCaster, i, each_obj;
 
-      // Pre-calculated
+      // Pre-calculated for most spells
       iDuration = Send(self,@GetStateDuration,#state=state);
-      oCaster = Send(self,@GetCaster,#state=state);
-      if IsClass(who,&Battler)
-         AND oCaster = who
-      {
-         if Send(who,@GetMana) >= viManaDrain
-         {
-            Send(who,@LoseMana,#amount=viManaDrain);
-         }
-         else
-         {
-            iAbility = Send(who,@GetSpellAbility,#spell_num=SID_CRYSTALIZE_MANA);
-            if iAbility > 0
-               AND NOT Send(who,@IsCrystalizeManaSurging)
-            {
-               oSpell = Send(SYS,@FindSpellByNum,#num=SID_CRYSTALIZE_MANA);
-               Send(oSpell,@DoManaSurge,#who=who,#triggered=TRUE);
-               if Send(who,@GetMana) >= viManaDrain
-               {
-                  Send(who,@LoseMana,#amount=viManaDrain);
-               }
-            }
-            else
-            {
-               Send(who,@StartEnchantment,#what=self,#time=iDuration,
-                     #who=oCaster,#state=state,#addicon=FALSE,#lastcall=TRUE,
-                     #bRadiusEnchant=TRUE,#iSpellPower=iSpellPower);
-
-               return;
-            }
-         }
-      }
+      oCaster = First(state);
 
       Send(who,@StartEnchantment,#what=self,#time=iDuration,#who=oCaster,
             #state=state,#addicon=FALSE,#lastcall=FALSE,#bRadiusEnchant=TRUE,
@@ -379,6 +345,11 @@ messages:
          {
             Send(self,@PeriodicEffect,#who=each_obj,#state=state);
          }
+      }
+
+      if viRegenerationEffect and IsClass(who,&Battler)
+      {
+         Send(who,@UpdateRates);
       }
 
       return;
@@ -420,7 +391,7 @@ messages:
       iFineRow = Send(oSource,@GetFineRow);
       iFineCol = Send(oSource,@GetFineCol);
       // Range is in fine units.
-      iRange = Send(self,@GetRange,#state=state);
+      iRange = Nth(state,RE_STATE_RANGE);
       // Squared.
       iRange *= iRange;
 
@@ -429,7 +400,8 @@ messages:
          each_obj = First(i);
 
          // Range check.
-         if (Send(who,@SquaredFineDistanceToLocation3D,#row=iRow,#col=iCol,
+         if (NOT IsClass(each_obj,&NoMoveOn)
+            OR Send(each_obj,@SquaredFineDistanceToLocation3D,#row=iRow,#col=iCol,
                   #fine_row=iFineRow,#fine_col=iFineCol) > iRange)
          {
             continue;
@@ -467,7 +439,7 @@ messages:
       lOldState = Send(who,@GetRadiusEnchantmentState,#what=self);
       if (lOldState <> $)
       {
-         if (Send(self,@GetSource,#state=lOldState) = who
+         if (Nth(lOldState,RE_STATE_SOURCE) = who
             OR iSpellPower <= Send(who,@GetRECastPower,#what=self))
          {
             return;
@@ -477,7 +449,7 @@ messages:
          Send(who,@RemoveRadiusEnchantment,#what=self,#state=lOldState);
       }
 
-      oCaster = Send(self,@GetCaster,#state=state);
+      oCaster = First(state);
       if (who = oCaster)
       {
          Send(who,@MsgSendUser,#message_rsc=vrEnterRadiusCaster);
@@ -485,11 +457,11 @@ messages:
       else
       {
          Send(who,@MsgSendUser,#message_rsc=vrEnterRadius,
-               #parm1=Send(oCaster,@GetDef),#parm2=Send(oCaster,@GetName));
+               #parm1=Send(oCaster,@GetCapDef),#parm2=Send(oCaster,@GetName));
       }
 
       // Don't try to re-enchant the source.
-      if (who <> Send(self,@GetSource,#state=state))
+      if (who <> Nth(state,RE_STATE_SOURCE))
       {
          if (Send(self,@GetLastCall))
          {
@@ -534,13 +506,17 @@ messages:
          return FALSE;
       }
 
-      if (IsClass(who,&User)
-         AND Send(who,@IsInCannotInteractMode))
+      if (IsClass(who,&User))
       {
-         return FALSE;
+         if (Send(who,@IsInCannotInteractMode)
+            OR (IsClass(who,&DM)
+               AND Send(who,@IsDMStealthed)))
+         {
+            return FALSE;
+         }
       }
 
-      oCaster = Send(self,@GetCaster,#state=state);
+      oCaster = First(state);
 
       if (oCaster = $)
       {
@@ -651,14 +627,20 @@ messages:
       return iSpellPower;
    }
 
+   GetDuration(iSpellPower=$)
+   // Override for non-periodic enchantments.
+   {
+      return viTickDuration;
+   }
+
    GetLastCall()
-   // Overwrite to true for non-periodic enchantments.
+   // Override to true for non-periodic enchantments.
    {
       return FALSE;
    }
 
    GetAddIcon()
-   // Overwrite for iconless enchantments.
+   // Override for iconless enchantments.
    {
       return TRUE;
    }
@@ -690,8 +672,8 @@ messages:
                iRow, iCol);
       }
 
-      oSource = Send(self,@GetSource,#state=state);
-      iRange = Send(self,@GetRange,#state=state);
+      oSource = Nth(state,RE_STATE_SOURCE);
+      iRange = Nth(state,RE_STATE_RANGE);
       iRange *= iRange;
 
       bEnchanted = Send(who,@IsEnchantedRadius,#what=self,#state=state);
@@ -704,7 +686,9 @@ messages:
          {
             Send(who,@MsgSendUser,#message_rsc=vrLeaveRadius,
                   #parm1=Send(oSource,@GetDef),#parm2=Send(oSource,@GetName));
-            Send(who,@RemoveRadiusEnchantment,#what=self,#state=state);
+            // Don't report in subsequent calls - radius spell still active.
+            Send(who,@RemoveRadiusEnchantment,#what=self,#state=state,
+                  #report=FALSE);
          }
       }
       else if (NOT bEnchanted)
@@ -742,11 +726,11 @@ messages:
          return;
       }
 
-      oSource = Send(self,@GetSource,#state=state);
+      oSource = Nth(state,RE_STATE_SOURCE);
 
       if report
       {
-         if (who = Send(self,@GetCaster,#state=state))
+         if (who = First(state))
          {
             Send(who,@MsgSendUser,#message_rsc=vrEnchantmentOff);
          }
@@ -775,52 +759,21 @@ messages:
                      #report=report,#recheck=recheck);
             }
          }
+
+         if viManaDrain > 0
+         {
+            // Stop drain effect!
+            Send(who,@DeleteOverTimeEffect,#what=self,#who=who,
+                  #removal=REMOVE_INTERNAL);
+         }
       }
 
       return;
    }
-
-   BreakTrance(who = $, event = $, state = $)
-   {
-      local oRoom, bRecheck;
-
-      // The spell keeps going if you get damaged, move, cast, use an item,
-      // or make an attack. Players must rest to end most radius spells.
-      if event = EVENT_DAMAGE
-         OR event = EVENT_ATTACK
-         OR event = EVENT_RUN
-         OR event = EVENT_DISRUPT
-         OR event = EVENT_CAST
-         OR event = EVENT_USE
-      {
-         return FALSE;
-      }
-
-      oRoom = Send(who,@GetOwner);
-
-      // Only cancel Persist spells if they are offensive & caster is
-      // entering a non-combat room
-      if (event = EVENT_NEWOWNER
-         OR event = EVENT_REQNEWOWNER)
-      {
-         if oRoom <> $
-            AND NOT (viHarmful
-               AND Send(oRoom,@CheckRoomFlag,#flag=ROOM_NO_COMBAT))
-         {
-            return FALSE;
-         }
-      }
-
-      bRecheck = (event = EVENT_REST);
-
-      Send(who,@RemoveRadiusEnchantment,#what=self,#state=state,
-            #recheck=bRecheck);
-
-      propagate;
-   }
 #endregion Unenchant Targets
 
 #region State Accessors
+   // These are useful for debugging but not necessary to use.
    GetCaster(state = $)
    "Returns the caster of the spell, given the state."
    {
@@ -897,11 +850,6 @@ messages:
    GetLightIntensity()
    {
       return viBaseLightIntensity;
-   }
-
-   GetDuration(iSpellPower=0)
-   {
-      return viDrainTime + iSpellPower;
    }
 
 #region Modifiers
@@ -1019,6 +967,89 @@ messages:
       propagate;
    }
 #endregion Description
+
+   OverTimeEffectStarting()
+   "REs naturally cause mana drain. No need to report anything."
+   {
+      return;
+   }
+
+   OverTimeEffectWearingOff()
+   "REs naturally cause mana drain. No need to report anything."
+   {
+      return;
+   }
+
+   // Overrides spell.kod entirely.
+   BreakTrance(who=$,state=$,event=$)
+   {
+      local oRoom, bRecheck;
+
+      if event = EVENT_OOM AND viManaDrain = 0
+      {
+         return FALSE;
+      }
+
+      // The spell keeps going if you get damaged, move, cast, use an item,
+      // or make an attack. Players must rest to end most radius spells.
+      if event = EVENT_DAMAGE
+         OR event = EVENT_ATTACK
+         OR event = EVENT_DISRUPT
+         OR event = EVENT_CAST
+         OR event = EVENT_USE
+         OR event = EVENT_STEER
+      {
+         return FALSE;
+      }
+
+      oRoom = Send(who,@GetOwner);
+
+      // Only cancel a maintained RE if it is offensive & caster is
+      // entering a non-combat room.
+      if (event = EVENT_NEWOWNER OR event = EVENT_REQNEWOWNER)
+      {
+         if oRoom <> $
+            AND NOT (viHarmful AND Send(oRoom,@CheckRoomFlag,#flag=ROOM_NO_COMBAT))
+         {
+            return FALSE;
+         }
+      }
+
+      bRecheck = (event = EVENT_REST OR event = EVENT_CANCEL);
+
+      Send(self,@TranceEnding,#who=who,#state=state,#bRecheck=bRecheck);
+
+      return TRUE;
+   }
+
+   TranceEnding(who=$,state=$,bRecheck=FALSE)
+   "Allow maintained spells to do something when their trance breaks."
+   {
+      Send(who,@RemoveRadiusEnchantment,#what=self,#state=state,#recheck=bRecheck);
+
+      return;
+   }
+
+   CanPayMonsterCosts(who=$,lTargets=$,iSpellpower=$)
+   {
+      if Send(who,@IsEnchanted,#what=self)
+      {
+         return FALSE;
+      }
+
+      propagate;
+   }
+
+   // Monsters don't suffer from switching REs on and off...
+   GetMonsterManaCost()
+   {
+      return 0;
+   }
+
+   GetMonsterExertion()
+   {
+      return 0;
+   }
 
 end
 ////////////////////////////////////////////////////////////////////////////////

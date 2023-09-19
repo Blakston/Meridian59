@@ -89,15 +89,12 @@ typedef struct {
    Bool technical;               /* Show technical info such as the connected server number? */
    Bool quickstart;              /* Try to answer all questions with defaults until playing. */
    Bool antiprofane;             /* Kill annoying incoming profanity. */
-   Bool guest;                   /* Automatically log in as "guest"? */
-   int  server_low, server_high; /* Closed interval of legal server numbers for guest logins */
    int  halocolor;               // 0 = red, 1 = blue, 2 = green
    int  language;                // 0 = English, 1 = German, 2 = Korean
 
    Bool lagbox;                  /* Display lag meter? */
    Bool ignoreprofane;           /* Kill messages including any profanity. */
    Bool extraprofane;            /* Really search hard for possible hidden profanity. */
-   int  server_guest;            /* Server to try first for guest logins */
    Bool play_loop_sounds;
    Bool play_random_sounds;
    Bool showMapBlocking;
@@ -117,15 +114,16 @@ typedef struct {
    int ObjectCacheMin;			 /* minimum size of the object cache */
    int GridCacheMin;			 /* minimum size of the grid cache */
 
-   Bool mipMaps; // Load multiple levels of textures.
-   int aaMode; // Level of antialiasing.
+   Bool mipMaps;       // Load multiple levels of textures.
+   Bool dynamicLights; // Lights active/inactive.
+   Bool drawWireframe; // Wireframe drawing in d3d renderer.
+   int aaMode;         // Level of antialiasing.
 
    // stuff for new client
    BOOL	bAlwaysRun;
    BOOL bAttackOnTarget;
    BOOL	bQuickChat;
    BOOL bInvertMouse;
-   BOOL bDynamicLighting;
    int	mouselookXScale;
    int	mouselookYScale;
 

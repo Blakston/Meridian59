@@ -15,9 +15,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="clubarchive.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="resource.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -45,16 +42,13 @@
     <ClCompile Include="club.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="clubarchive.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="transfer.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="util.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\util\md5.c">
+    <ClCompile Include="..\util\sha256.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

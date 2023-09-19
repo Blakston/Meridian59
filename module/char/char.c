@@ -243,7 +243,7 @@ Bool HandleCharInfo(char *ptr, long len)
       // skill selection. School hardcoded to weaponcraft until
       // alternatives are available, due to incompatibility
       // with existing protocol (school not sent for skills).
-      list_str.assign(GetSchoolString(SKS_FENCING));
+      list_str.assign(GetSchoolString(SKS_WEAPONCRAFT));
       if (s->cost < 25)
          list_str.append(" 1: ");
       else
@@ -287,9 +287,18 @@ Bool HandleCharInfoOk(char *ptr, long len)
 /********************************************************************/
 Bool HandleCharInfoNotOk(char *ptr, long len)
 {
-   if (len != 0)
-      return False;
-   CharInfoInvalid();
+   BYTE err_num;
+
+   // Handle with generic error if message doesn't fit.
+   if (len != SIZE_CHARINFO_ERROR)
+      CharInfoInvalid(CC_GENERIC_ERROR);
+   else
+   {
+      Extract(&ptr, &err_num, SIZE_CHARINFO_ERROR);
+      len -= SIZE_CHARINFO_ERROR;
+      CharInfoInvalid(err_num);
+   }
+
    return True;
 }
 /****************************************************************************/
@@ -326,10 +335,10 @@ char *GetSchoolString(School school_id)
       return GetString(hInst, IDS_JALA);
    case SS_DM_COMMAND:
       return GetString(hInst, IDS_DMSCHOOL);
-   case SKS_FENCING:
-      return GetString(hInst, IDS_FENCING);
-   case SKS_BRAWLING:
-      return GetString(hInst, IDS_BRAWLING);
+   case SKS_WEAPONCRAFT:
+      return GetString(hInst, IDS_WEAPONCRAFT);
+   case SKS_DM:
+      return GetString(hInst, IDS_DMSKILL);
    case SKS_THIEVERY:
       return GetString(hInst, IDS_THIEVERY);
    }

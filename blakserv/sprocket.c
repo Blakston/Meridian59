@@ -21,7 +21,7 @@ typedef struct
 
 client_def_table_type client_def_table[] = 
 { 
-	{ BP_REQ_MOVE,             { {2, TAG_INT}, {2, TAG_INT}, {1, TAG_INT}, {4, TAG_OBJECT},
+	{ BP_REQ_MOVE,             { {2, TAG_INT}, {2, TAG_INT}, {1, TAG_INT}, {4, TAG_OBJECT}, {2, TAG_INT},
 	{0, DONE_PARM} } },
 	{ BP_SEND_OBJECT_CONTENTS, { {4, TAG_OBJECT}, {0, DONE_PARM} } },
 	{ BP_SAY_TO,               { {1, TAG_INT}, {0,TAG_TEMP_STRING}, {0, DONE_PARM} } },
@@ -53,6 +53,8 @@ client_def_table_type client_def_table[] =
 	{ BP_REQ_GO,               { {0, DONE_PARM} } },
 	{ BP_SEND_PLAYERS,         { {0, DONE_PARM} } },
 	{ BP_REQ_BUY,              { {4, TAG_OBJECT}, {0, DONE_PARM} } },
+	{ BP_REQ_TRIGGER_QUEST,    { {4, TAG_OBJECT}, {4, TAG_OBJECT}, {0, DONE_PARM} } },
+	{ BP_REQ_NPC_QUESTS,       { {4, TAG_OBJECT}, {0, DONE_PARM} } },
 	{ BP_REQ_BUY_ITEMS,        { {4, TAG_OBJECT}, {2, LIST_OBJ_PARM}, {0, DONE_PARM} } },
 	{ BP_REQ_WITHDRAWAL,       { {4, TAG_OBJECT}, {0, DONE_PARM} } },
 	{ BP_REQ_WITHDRAWAL_ITEMS, { {4, TAG_OBJECT}, {2, LIST_OBJ_PARM}, {0, DONE_PARM} } },
@@ -61,6 +63,7 @@ client_def_table_type client_def_table[] =
 	{ BP_SEND_SPELLS,          { {0, DONE_PARM} } },
 	{ BP_SEND_SKILLS,          { {0, DONE_PARM} } },
 	{ BP_REQ_CAST,             { {4, TAG_OBJECT}, {2, LIST_OBJ_PARM}, {0, DONE_PARM} } },
+	{ BP_REQ_PERFORM,          { {4, TAG_OBJECT}, {2, LIST_OBJ_PARM}, {0, DONE_PARM} } },
 	{ BP_REQ_ARTICLES,         { {2, TAG_INT}, {0, DONE_PARM} } },
 	{ BP_REQ_ARTICLE,          { {2, TAG_INT}, {4, TAG_INT}, {0, DONE_PARM} } },
 	{ BP_POST_ARTICLE,         { {2, TAG_INT}, {0, TAG_STRING}, {0, TAG_STRING}, {0, DONE_PARM} } },
@@ -117,6 +120,7 @@ client_def_table_type usercommand_def_table[] =
 	{1, TAG_INT}, {0, DONE_PARM} } },
 	{ UC_GUILD_SHIELDS,         { {0, DONE_PARM} } },
 	{ UC_GUILD_SHIELD,          { {0, DONE_PARM} } },
+	{ UC_GUILD_SHIELD_ERROR,    { {0, DONE_PARM} } },
 	{ UC_CLAIM_SHIELD,          { {1, TAG_INT}, {1, TAG_INT}, {1, TAG_INT}, {1, TAG_INT}, {0, DONE_PARM} } },
 	{ UC_DISBAND,               { {0, DONE_PARM} } },
 	{ UC_MAKE_ALLIANCE,         { {4, TAG_OBJECT}, {0, DONE_PARM} } },

@@ -23,9 +23,7 @@ resources:
    icenova_projectile_rsc = icebolt.bgf
    icenova_desc_rsc = \
       "Call upon the magic of Faren and propel forth a blast of ice, "
-      "chilling and blistering the skin of those around you.  "
-      "Requires one red and two blue mushrooms to cast."
-
+      "chilling and blistering the skin of those around you."
    icenova_first_rsc = \
       "You channel the power of Faren and unleash a flurry of ice shards!"
    icenova_third_rsc = \
@@ -49,6 +47,9 @@ classvars:
    vrDesc = icenova_desc_rsc
    vrIcon = icenova_icon_rsc
 
+   vrAttackFirst = icenova_first_rsc
+   vrAttackThird = icenova_third_rsc
+
    viSpell_num = SID_ICE_NOVA
    viSchool = SS_FAREN
    viSpell_level = 5
@@ -58,7 +59,7 @@ classvars:
    viMeditate_ratio = 75
    vrSucceed_wav = icenova_sound
 
-   viAttack_spell = ATCK_SPELL_ALL+ATCK_SPELL_COLD
+   viSpell_type = SPL_TYPE_ALL+SPL_TYPE_COLD
    viOutlaw = TRUE
    viHarmful = TRUE
    viNoNewbieOffense = TRUE
@@ -96,48 +97,6 @@ messages:
    SendProjectileAnimation()
    {
       AddPacket(1, ANIMATE_CYCLE, 4, 40, 2, 2, 2, 2);  // 40ms between animations
-
-      return;
-   }
-
-   CastSpell(who=$,lTargets=$,iSpellPower=0,bItemCast=FALSE)
-   {
-      // This is an area damage spell, so add room messages
-      // showing the spell being cast.
-      Send(self,@DoIceNova,#who=who,#bItemCast=bItemCast);
-
-      propagate;
-   }
-
-   DoIceNova(who=$,bItemCast=FALSE)
-   {
-      local i, oRoom, each_obj;
-
-      if (who = $)
-      {
-         return;
-      }
-
-      oRoom = Send(who,@GetOwner);
-
-      // Send a message to all in room of spellcasters actions
-      foreach i in Send(oRoom,@GetHolderActive)
-      {
-         each_obj = First(i);
-
-         if IsClass(each_obj,&User)
-         {
-            if each_obj = who
-            {
-               Send(each_obj,@MsgSendUser,#message_rsc=icenova_first_rsc);
-            }
-            else
-            {
-               Send(each_obj,@MsgSendUser,#message_rsc=icenova_third_rsc,
-                     #parm1=Send(who,@GetCapDef),#parm2=Send(who,@GetName));
-            }
-         }
-      }
 
       return;
    }

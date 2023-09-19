@@ -27,9 +27,14 @@ resources:
    caster_Evaluate_msg = "~bYou stare deeply at %s%s."
    Evaluated_Evaluate_msg = "~b%s%s looks deeply into your eyes."
    Evaluate_desc_rsc = \
-      "This gazes deep into a person's eyes, and judges their odds "
-      "of gaining another health point."
-   evaluate_message = "%s has %i XP and needs %i to reach %i HP."
+      "This gazes deep into a person's eyes, and judges their odds of "
+      "gaining another health point, as well as revealing various statistics."
+   evaluate_message = \
+      "%s has %i XP and needs %i to reach %i HP.  They have %i karma and "
+      "%i vigor."
+   evaluate_message_stats = \
+      "They have natural statistics of %i might, %i intellect, %i stamina, "
+      "%i agility, %i mysticism and %i aim."
    evaluate_monster = \
       "%s should concentrate on killing monsters at about %s ability level, "
       "such as %ss and %ss."
@@ -60,7 +65,30 @@ messages:
       return 1;
    }
 
-   CastSpell(who = $, lTargets = $)
+   CanPayCosts(who = $, lTargets = $)
+   {
+      local oTarget;
+
+      if Length(lTargets) <> 1
+      {
+         return FALSE;
+      }
+
+      oTarget = First(lTargets);
+
+      if (NOT IsClass(oTarget,&Battler))
+      {
+         Send(who,@MsgSendUser,#message_rsc=spell_bad_target,
+               #parm1=vrName,#parm2=Send(oTarget,@GetDef),
+               #parm3=Send(oTarget,@GetName));
+
+         return FALSE;
+      }
+
+      propagate;
+   }
+
+   DoSpellEffects(who = $, lTargets = $)
    {
       local i, oTarget, each_obj;
 
@@ -101,7 +129,7 @@ messages:
          }
       }
 
-      propagate;
+      return TRUE;
    }
 
    ComputeEvaluateInfo(who=$,dmis=$)
@@ -120,13 +148,16 @@ messages:
       {
          iXPForLevel = Send(who,@GetXPRemainingForNextLevel);
          iXP = Send(who,@GetTotalXP);
-         iMaxHP = Send(who,@GetMaxHealth);
+         iMaxHP = Send(who,@GetUncappedBaseMaxHealth);
          Send(dmis,@MsgSendUser,#message_rsc=evaluate_message,
                #parm1=Send(who,@GetTrueName),#parm2=iXP,#parm3=iXPForLevel,
-               #parm4=iMaxHP + 1);
+               #parm4=iMaxHP + 1,#parm5=Send(who,@GetKarma),
+               #parm6=Send(who,@GetVigor));
+         Send(dmis,@MsgSendUser,#message_rsc=evaluate_message_stats,
+               #parm1=Send(who,@GetRawMight),#parm2=Send(who,@GetRawIntellect),
+               #parm3=Send(who,@GetRawStamina),#parm4=Send(who,@GetRawAgility),
+               #parm5=Send(who,@GetRawMysticism),#parm6=Send(who,@GetRawAim));
 
-         monsterA = $;
-         monsterB = $;
          foreach i in Send(SYS,@GetMonsterTemplates)
          {
             // This routine finds two monsters who are closest in level to the
@@ -155,15 +186,19 @@ messages:
             }
          }
 
-         Send(dmis,@MsgSendUser,#message_rsc=evaluate_monster,
-               #parm1=Send(who,@GetName),#parm2=Send(who,@GetHisHer),
-               #parm3=Send(MonsterA,@GetName),#parm4=Send(MonsterB,@GetName));
+         if (monsterA <> $
+            AND monsterB <> $)
+         {
+            Send(dmis,@MsgSendUser,#message_rsc=evaluate_monster,
+                  #parm1=Send(who,@GetName),#parm2=Send(who,@GetHisHer),
+                  #parm3=Send(MonsterA,@GetName),#parm4=Send(MonsterB,@GetName));
+         }
       }
 
       Send(dmis,@MsgSendUser,#message_rsc=Evaluate_combat,
             #parm1=Send(who,@GetName),#parm2=Send(who,@GetOffense),
             #parm3=Send(who,@GetDefense),#parm4=Send(who,@GetDamage),
-            #parm5=Send(who,@GetDamageType),#parm6=Send(who,@GetSpellType));
+            #parm5=Send(who,@GetAttackType),#parm6=Send(who,@GetSpellType));
 
       return;
    }

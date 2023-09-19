@@ -38,9 +38,7 @@ classvars:
 
    // Mana is amount used upon inititiation
    viMana = 10
-   // viManaDrain is amount used every viDrainTime milliseconds
-   viManaDrain = 7
-   viDrainTime = 1000
+   viManaDrain = 7000            // Mana drained per second (10^3)
 
    viCast_time = 2000
 
@@ -85,6 +83,8 @@ properties:
 
    pbAccessible = TRUE
 
+   piMovementSpeedReduction = 50
+
 messages:
 
    SpellMurmurMessage(caster=$, target=$, hearer=$)
@@ -108,41 +108,15 @@ messages:
       return 0;
    }
 
-   BreakTrance(who = $, state = $)
-   {
-      // If caster runs out of mana or loses trance, spell ends.
-      if IsClass(First(state),&Prism)
-      {
-         Send(First(state),@CasterBrokeTrance,#who=who);
-         Send(who,@RemoveEnchantment,#what=self,#state=state);
-
-         propagate;
-      }
-
-      return;
-   }
-
    StartPeriodicEnchantment(who = $, state = $,iSpellPower=0)
    "Sends enchantment message to room like CastSpell for most room enchantments, "
    "but silent, and done as often as necessary"
     {
       local iAmount;
-      
-      // If caster runs out of mana or loses trance, spell ends.
-      if Send(who,@GetMana) < viManaDrain * 2
-      {
-         Send(who,@StartEnchantment,#what=self,#time=viDrainTime,
-              #state=state,#addicon=FALSE,#lastcall=TRUE,
-              #iSpellPower=iSpellPower);
-      }
-      else
-      {      
-         Send(who,@StartEnchantment,#what=self,#time=viDrainTime,
-              #state=state,#addicon=FALSE,#lastcall=FALSE,
-              #iSpellPower=iSpellPower);
-      }
 
-      Send(who,@LoseMana,#amount=viManaDrain);
+      Send(who,@StartEnchantment,#what=self,#time=viTickDuration,
+           #state=state,#addicon=FALSE,#lastcall=FALSE,
+           #iSpellPower=iSpellPower);
 
       // Each caster contributes from 1 - 4 spellpoints per second.
       iAmount = Send(self,@GetSpellPower,#who=who) + 1;
@@ -205,7 +179,7 @@ messages:
       return;
    }
 
-   CastSpell(who = $, lTargets = $, iSpellPower = 0)
+   DoSpellEffects(who = $, lTargets = $, iSpellPower = 0)
    // This is the entry point, sets players to trance while they
    // focus on casting on the prism.  The prism calls PrismCast()
    // below when it has enough energy from the casters.
@@ -217,17 +191,19 @@ messages:
       {
          Send(who,@MsgSendUser,#message_rsc=multicast_no_prism);
 
-         return;
+         return FALSE;
       }
 
-      Send(who,@StartEnchantment,#what=self,#state=[oPrism],#time=viDrainTime,
+      Send(who,@StartEnchantment,#what=self,#state=[oPrism],#time=viTickDuration,
            #iSpellPower=iSpellPower,#lastcall=FALSE);
+
+      Send(who,@AddMovementSpeedPercent,#iSpeed=-piMovementSpeedReduction);
 
       Send(oPrism,@SpellCast,#what=self,#who=who,#lTargets=lTargets);
       Send(oPrism,@ContributeSpellpower,#who=who,
            #amount=Send(self,@GetSpellPower,#who=who)/2);
 
-      propagate;
+      return TRUE;
    }
 
    PrismCast(spellpower = 0, lCasters=$, lTargets=$)  
@@ -240,14 +216,33 @@ messages:
    "Called when caster breaks trance or runs out of mana (ends involvement inspell)."
    {
       Send(who,@ClearTranceFlag);
+      Send(who,@AddMovementSpeedPercent,#iSpeed=piMovementSpeedReduction);
       Send(First(state),@CasterBrokeTrance,#who=who);
 
-      return;
+      propagate;
    }
 
    SpellBannedInArena()
    {
       return TRUE;
+   }
+
+   BreakTrance(state=$)
+   {
+      if NOT IsClass(First(state),&Prism)
+      {
+         return FALSE;
+      }
+
+      propagate;
+   }
+
+   TranceEnding(who=$,state=$)
+   "Allow maintained spells to do something when their trance breaks."
+   {
+      Send(who,@RemoveEnchantment,#what=self,#state=state);
+
+      propagate;
    }
 
 end

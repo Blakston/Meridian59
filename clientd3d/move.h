@@ -18,6 +18,7 @@
 
 void ResetPlayerPosition(void);
 
+void UserTryGo();
 void UserMovePlayer(int action);
 Bool ObjectsMove(int dt);
 Bool MoveSingle(Motion *m, int dt);
@@ -31,10 +32,11 @@ int  PlayerGetHeightOffset(void);
 void ServerMovedPlayer(void);
 void MoveUpdateServer(void);
 void MoveSetValidity(Bool valid);
-void MoveUpdatePosition(void);
+Bool MoveUpdatePosition(void);
 
 void UserTurnPlayer(int action);
 void UserTurnPlayerMouse(int delta);
 void UserFlipPlayer(void);
+void SetMovementSpeedPct(int speed);
 
 #endif /* #ifndef _MOVE_H */

@@ -21,13 +21,9 @@ resources:
 
    include item.lkod
 
-   item_this = "This "
-   item_blank_template = "%q"
-
    // item_desc_template is vrDesc, item attributes, object attributes,
    // variable item appends, item stats, item condition.
    item_desc_template = "%r%r%r%r%r%r"
-   resource_blank = ""
 
    item_try_use_cursed_rsc = \
       "As you pick the item up, you feel a will greater than your own "
@@ -61,7 +57,7 @@ resources:
    item_stats_offense = "%i offense rating bonus\n"
    item_stats_armor = "%i armor\n"
    item_stats_defense = "%i defense rating bonus\n"
-   item_stats_melee = "%i melee damage bonus\n"
+   item_stats_melee = "%r%i melee damage bonus\n"
    item_stats_min_dmg = "%i-"
    item_stats_base_dmg = "%r%i base damage\n"
    item_stats_owner_dmg = "%r%i damage in owner's hands\n"
@@ -83,7 +79,7 @@ classvars:
 
    vrItem_broken = item_broken_battle
 
-   vrPoss_article = item_this
+   vrPoss_article = object_article_cap_this_rsc
    viUse_type = ITEM_CANT_USE
    viItem_type = ITEMTYPE_MISC
 
@@ -125,6 +121,10 @@ classvars:
    viUnrevealedColor = 0
    viRevealedColor = 0
 
+   // If this item is a light source, what is its color and intensity? Max intensity: 255
+   viLightColor = LIGHT_FIRE
+   viBaseLightIntensity = 0
+
 properties:
 
    viObject_flags = OF_GETTABLE
@@ -158,7 +158,7 @@ messages:
       }
 
       if (oDMCreator <> $
-         AND NOT IsClass(self,&NumberItem))
+         AND NOT Send(self,@IsStackable))
       {
          oItemAtt = Send(SYS,@FindItemAttByNum,#num=IA_DM_CREATED);
          if Send(oItemAtt,@ReqAddToItem,#oItem=self)
@@ -175,7 +175,7 @@ messages:
       return;
    }
 
-   AppendStatsDesc()
+   AppendStatsDesc(bShowAll = FALSE)
    "This is the statistics for the weapon, such as damage, armor, "
    "resists and spellpower added."
    {
@@ -263,17 +263,24 @@ messages:
          AddPacket(4,system_blank_resource);
       }
 
-      if Send(self,@GetMeleeDamageBonus) <> 0
+      iMinDamage = Send(self,@GetMinMeleeDamageBonus);
+      if iMinDamage <> 0
       {
-         if bFoundProperties
+         if NOT bFoundProperties
          {
-            AddPacket(4,item_stats_melee, 4,Send(self,@GetMeleeDamageBonus));
+            AddPacket(4,system_rsc_template_12, 4,special_properties_header);
+            bFoundProperties = TRUE;
+         }
+         // Reuse this variable.
+         iMinDamageOwner = Send(self,@GetMaxMeleeDamageBonus);
+         if iMinDamage <> iMinDamageOwner
+         {
+            AddPacket(4,item_stats_melee, 4,item_stats_min_dmg,
+                      4,iMinDamage, 4,iMinDamageOwner);
          }
          else
          {
-            AddPacket(4,system_rsc_template_12, 4,special_properties_header,
-                      4,item_stats_melee, 4,Send(self,@GetMeleeDamageBonus));
-            bFoundProperties = TRUE;
+            AddPacket(4,item_stats_melee, 4,system_blank_resource, 4,iMinDamage);
          }
       }
       else if bFoundProperties
@@ -574,7 +581,7 @@ messages:
          AddPacket(4,system_blank_resource);
       }
 
-      iAttackType = Send(self,@GetAttackSpell);
+      iAttackType = Send(self,@GetSpellType);
       if iAttackType <> 0
       {
          iLen = Length(Send(SYS,@GetSpellTypeList));
@@ -629,7 +636,8 @@ messages:
 
             // Each item attribute can add a description, or possibly
             // a blank resource if it isn't identified.
-            Send(oItemAtt,@AppendDescInfo,#oItem=self,#compound=First(i));
+            Send(oItemAtt,@AppendDescInfo,#oItem=self,#compound=First(i),
+                  #bShowAll=bShowAll);
          }
       }
       else
@@ -665,7 +673,7 @@ messages:
       return 0;
    }
 
-   GetAttackSpell()
+   GetSpellType()
    {
       return 0;
    }
@@ -706,7 +714,12 @@ messages:
       return 0;
    }
 
-   GetMeleeDamageBonus()
+   GetMinMeleeDamageBonus()
+   {
+      return 0;
+   }
+
+   GetMaxMeleeDamageBonus()
    {
       return 0;
    }
@@ -816,7 +829,7 @@ messages:
 
       // Special things for number items, etc.
       Send(self,@AppendDesc);
-      Send(self,@AppendStatsDesc);
+      Send(self,@AppendStatsDesc,#bShowAll=bShowAll);
       Send(self,@AppendItemCondition);
 
       return;
@@ -1030,10 +1043,24 @@ messages:
 
    NewUsed()
    {
+      local i, iNum, iSpeed;
+
       Send(self,@DoPlayerArt);
-      If IsClass(poOwner,&Player)
+      if IsClass(poOwner,&Player)
       {
          Post(poOwner,@RefreshPlayerVisualGear);
+      }
+
+      foreach i in plItem_Attributes
+      {
+         iNum = Send(self,@GetNumFromCompound,#compound=First(i));
+         if (iNum = IA_MOVESPEED)
+         {
+            // TranslatePowerFromCompound from ItemAtt.
+            // Avoid looking up the itematt object here.
+            iSpeed = (First(i) / 10) % 10;
+            Send(poOwner,@AddMovementSpeedPercent,#iSpeed=iSpeed);
+         }
       }
 
       return;
@@ -1074,7 +1101,7 @@ messages:
    "Called when the player tries to unuse the item"
    {
       local i, oItemAtt, iNum;
-          
+
       // Check to be sure nothing in ItemAtts disallows this
       foreach i in plItem_Attributes
       {
@@ -1085,13 +1112,27 @@ messages:
             return FALSE;
          }
       }
-      
+
       return TRUE;
    }
 
    NewUnused()
    {
+      local i, iNum, iSpeed;
+
       Send(self,@UndoPlayerArt);
+
+      foreach i in plItem_Attributes
+      {
+         iNum = Send(self,@GetNumFromCompound,#compound=First(i));
+         if (iNum = IA_MOVESPEED)
+         {
+            // TranslatePowerFromCompound from ItemAtt.
+            // Avoid looking up the itematt object here.
+            iSpeed = (First(i) / 10) % 10;
+            Send(poOwner,@AddMovementSpeedPercent,#iSpeed=-iSpeed);
+         }
+      }
 
       return;
    }
@@ -1509,6 +1550,12 @@ messages:
       return FALSE;
    }
 
+   KilledSomething()
+   "Called when owner kills something, only if item is in use."
+   {
+      return;
+   }
+
    OwnerKilled(what = $)
    "Called when our owner dies. Killer is passed as 'what' parameter."
    {
@@ -1563,7 +1610,26 @@ messages:
       }
       
       return TRUE;
-   }   
+   }
+
+   CanBeUsedInQuests()
+   "Magic items with special attributes cannot be given away in a quest."
+   {
+      local i, oItemAtt, iNum;
+
+      // Check ItemAtts to be sure nothing funky is there
+      foreach i in plItem_Attributes
+      {
+         iNum = Send(self,@GetNumFromCompound,#compound=First(i));
+         oItemAtt = Send(SYS,@FindItemAttByNum,#num=iNum);
+         if (NOT Send(oItemAtt,@ItemCanBeUsedInQuests))
+         {
+            return FALSE;
+         }
+      }
+
+      return TRUE;
+   }
 
    CanBeStoredInVault()
    "Black daggers and tokens, especially, cannot be stored in vaults."
@@ -2064,6 +2130,26 @@ messages:
       return iXP;
    }
 
+   GetItemMoveSpeedBonus()
+   {
+      local oItemAtt, iMoveSpeed, i, iNum, oObjectAttribute;
+
+      iMoveSpeed = 0;
+
+      foreach i in plItem_Attributes
+      {
+         iNum = Send(self,@GetNumFromCompound,#compound=First(i));
+         if (iNum = IA_MOVESPEED)
+         {
+            oItemAtt = Send(SYS,@FindItemAttByNum,#num=iNum);
+            iMoveSpeed += Send(oItemAtt,@TranslatePowerFromCompound,
+                              #iCompound=First(i));
+         }
+      }
+
+      return iMoveSpeed;
+   }
+
    GetHeatDamage()
    "Only things worn at the armor position will be asked this, but "
    "just in case, default is 0."
@@ -2480,17 +2566,18 @@ messages:
       return  (iRow_diff * iRow_diff + iCol_diff * iCol_diff);
    }
 
+   // Note that these messages use SomethingChangedFlags and not
+   // SomethingChanged, if adding/removing magic flag changes the
+   // item graphics in the future, SomethingChanged should be used
+   // or perhaps added as an override for those effects/items.
    AddMagicFlag()
    {
-      if viObject_flags <> (OF_GETTABLE | OF_ITEM_MAGIC)
-      {
-         viObject_flags = viObject_flags | OF_ITEM_MAGIC;
-      }
+      viObject_flags |= OF_ITEM_MAGIC;
 
       if poOwner <> $
          AND IsClass(poOwner,&User)
       {
-         Send(poOwner,@SomethingChanged,#what=self);
+         Send(poOwner,@SomethingChangedFlags,#what=self);
       }
 
       return;
@@ -2500,31 +2587,32 @@ messages:
    {
       local i, iNum, oItemAtt;
 
+      // Double check if we should keep magic flag due to another itematt.
       foreach i in plItem_attributes
       {
          iNum = Send(self,@GetNumFromCompound,#compound=First(i));
          oItemAtt = Send(SYS,@FindItemAttByNum,#num=iNum);
-         
+
          if Send(oItemAtt,@IsMagicalEffect)
          {
-            viObject_flags = viObject_flags | OF_ITEM_MAGIC;
+            viObject_flags |= OF_ITEM_MAGIC;
 
             if poOwner <> $
                AND IsClass(poOwner,&User)
             {
-               Send(poOwner,@SomethingChanged,#what=self);
+               Send(poOwner,@SomethingChangedFlags,#what=self);
             }
 
             return;
          }
       }
 
-      viObject_flags = viObject_flags & ~OF_ITEM_MAGIC;
+      viObject_flags &= ~OF_ITEM_MAGIC;
 
       if poOwner <> $
          AND IsClass(poOwner,&User)
       {
-         Send(poOwner,@SomethingChanged,#what=self);
+         Send(poOwner,@SomethingChangedFlags,#what=self);
       }
 
       return;
@@ -2588,6 +2676,21 @@ messages:
       GodLog(Send(self,@GetTrueName)," weight: ",viWeight," bulk: ",viBulk);
 
       return;
+   }
+
+   GetLightColor()
+   {
+      return viLightColor;
+   }
+
+   GetLightIntensity()
+   {
+      return viBaseLightIntensity;
+   }
+
+   IsLightSource()
+   {
+      return viBaseLightIntensity > 0;
    }
 
 end

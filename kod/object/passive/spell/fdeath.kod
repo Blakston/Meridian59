@@ -28,7 +28,6 @@ resources:
    feigndeath_angrymocker = "an angry guy named Mocker"
    feigndeath_fallingpiano = "a falling piano"
    feigndeath_firebunny = "a fire breathing bunny"
-   feigndeath_giantrat = "a giant rat"
    feigndeath_nuthin = ""
 
 classvars:
@@ -38,8 +37,7 @@ classvars:
    vrDesc = feigndeath_desc_rsc
 
    viMana = 5          // Mana is amount used upon inititiation
-   viManaDrain = 5     // Drain is amount used every viDrainTime milliseconds
-   viDrainTime = 5000    // Drain some mana every viDrainTime milliseconds
+   viManaDrain = 1000            // Mana drained per second (10^3)
    viSpell_num = SID_FEIGN_DEATH
    viSpellExertion = 1
    viChance_To_Increase = 40
@@ -61,12 +59,12 @@ messages:
       return;
    }
 
-   CastSpell(who = $, iSpellPower = 0)
+   DoSpellEffects(who = $, iSpellPower = 0)
    "Initiation point for the spell."
    {
       local oMonster, oBody, oRoom, oScapegoat, iRand, i, each_obj,
             iRow, iCol, iFineRow, iFineCol, iDropChance;
-      
+
       oRoom = Send(who,@GetOwner);
       iRow = Send(who,@GetRow);
       iCol = Send(who,@GetCol);
@@ -110,7 +108,7 @@ messages:
       }
 
       Send(who,@SetPlayerIllusion,#what=self);
-      Send(who,@StartEnchantment,#what=self,#time=viDrainTime,
+      Send(who,@StartEnchantment,#what=self,#time=viTickDuration,
            #state=[oBody,iSpellPower],#addicon=TRUE,#lastcall=FALSE);
 
       if NOT Send(who,@PlayerIsImmortal)
@@ -141,7 +139,6 @@ messages:
                AND Send(i,@ReqNewOwner,#what=oRoom)
                AND Send(i,@ReqLeaveOwner)
                AND Send(i,@DropOnDeath)
-               AND NOT IsClass(i,&RiijaSword)
                AND Random(1,100) < iDropChance
             {
                Send(oRoom,@NewHold,#what=i,#new_row=iRow,#new_col=iCol,
@@ -165,51 +162,37 @@ messages:
          }
       }
 
-      Send(who,@AddDefenseModifier,#what=self);      
+      Send(who,@AddDefenseModifier,#what=self);
 
       iRand = Random(1,100);
       if iRand > 3
       {
-         Send(self,@SendMessage,#who=who,
-              #string=feigndeath_user_killed,
-              #parm1=Send(who,@GetUserName),
-              #parm2=Send(oScapeGoat,@GetIndef),
-              #parm3=Send(oScapeGoat,@GetName));
+         Send(self,@SendMessage,#who=who,#string=feigndeath_user_killed,
+               #parm1=Send(who,@GetUserName),#parm2=Send(oScapeGoat,@GetIndef),
+               #parm3=Send(oScapeGoat,@GetName));
          Send(oScapeGoat,@Delete);
+      }
+      else if iRand = 1
+      {
+         Send(self,@SendMessage,#who=who,#string=feigndeath_user_killed,
+               #parm1=Send(who,@GetUserName),#parm2=feigndeath_nuthin,
+               #parm3=feigndeath_angrymocker);
+      }
+      else if iRand = 2
+      {
+         Send(self,@SendMessage,#who=who,#string=feigndeath_user_killed,
+               #parm1=Send(who,@GetUserName),#parm2=feigndeath_nuthin,
+               #parm3=feigndeath_fallingpiano);
       }
       else
       {
-         if iRand = 1
-         {
-            Send(self,@SendMessage,#who=who,
-                 #string=feigndeath_user_killed,
-                 #parm1=Send(who,@GetUserName),
-                 #parm2=feigndeath_nuthin,
-                 #parm3=feigndeath_angrymocker);
-         }
-         else
-         {
-            if iRand = 2
-            {
-               Send(self,@SendMessage,#who=who,
-                    #string=feigndeath_user_killed,
-                    #parm1=Send(who,@GetUserName),
-                    #parm2=feigndeath_nuthin,
-                    #parm3=feigndeath_fallingpiano);
-            }
-            else
-            {
-               // if iRand = 3
-               Send(self,@SendMessage,#who=who,
-                    #string=feigndeath_user_killed,
-                    #parm1=Send(who,@GetUserName),
-                    #parm2=feigndeath_nuthin,
-                    #parm3=feigndeath_firebunny);
-            }
-         }
+         // if iRand = 3
+         Send(self,@SendMessage,#who=who,#string=feigndeath_user_killed,
+               #parm1=Send(who,@GetUserName),#parm2=feigndeath_nuthin,
+               #parm3=feigndeath_firebunny);
       }
 
-      propagate;
+      return TRUE;
    }
 
    SendMessage(who=$,string=$,parm1=$,parm2=$,parm3=$)
@@ -230,7 +213,7 @@ messages:
          foreach j in Send(oYellRoom,@GetHolderActive)
          {
             each_obj = Send(oYellRoom,@HolderExtractObject,#data=j);
-            if IsClass(each_obj,&player)
+            if IsClass(each_obj,&Player)
             {
                Send(each_obj,@MsgSendUser,#message_rsc=string,
                      #parm1=parm1,#parm2=parm2,#parm3=parm3);
@@ -243,7 +226,7 @@ messages:
          foreach j in Send(oRoom,@GetHolderActive)
          {
             each_obj = Send(oRoom,@HolderExtractObject,#data=j);
-            if IsClass(each_obj,&player)
+            if IsClass(each_obj,&Player)
             {
                Send(each_obj,@MsgSendUser,#message_rsc=string,
                      #parm1=parm1,#parm2=parm2,#parm3=parm3);
@@ -254,7 +237,7 @@ messages:
       return;
    }
 
-   RemoveEnchantmentEffects(who=$,state=$)
+   EndEnchantment(who = $, state=$)
    {
       Send(who,@RemoveDefenseModifier,#what=self);
       Send(who,@ResetPlayerIllusion);
@@ -265,19 +248,12 @@ messages:
          SetFirst(state, $);
       }
 
-      return;
+      propagate;
    }
 
-   EndEnchantment(who = $, state=$)
+   TranceEnding(who=$,state=$)
+   "Allow maintained spells to do something when their trance breaks."
    {
-      Post(self,@RemoveEnchantmentEffects,#who=who,#state=state);
-
-      return;
-   }
-
-   BreakTrance(who = $, state = $)
-   {
-      // If caster runs out of mana or loses trance, spell ends.
       Send(who,@RemoveEnchantment,#what=self,#state=state);
 
       propagate;
@@ -285,21 +261,9 @@ messages:
 
    StartPeriodicEnchantment(who = $, state = $, iSpellPower = 0)
    {
-      // If caster runs out of mana or loses trance, spell ends.
-      if Send(who,@GetMana) < viManaDrain * 2
-      {
-         Send(who,@StartEnchantment,#what=self,#time=viDrainTime,
-               #state=state,#addicon=FALSE,#lastcall=TRUE,
-               #iSpellPower=iSpellPower);
-      }
-      else
-      {
-         Send(who,@StartEnchantment,#what=self,#time=viDrainTime,
-               #state=state,#addicon=FALSE,#lastcall=FALSE,
-               #iSpellPower=iSpellPower);
-      }
-
-      Send(who,@LoseMana,#amount=viManaDrain);
+      Send(who,@StartEnchantment,#what=self,#time=viTickDuration,
+            #state=state,#addicon=FALSE,#lastcall=FALSE,
+            #iSpellPower=iSpellPower);
 
       return;
    }
@@ -314,14 +278,24 @@ messages:
 
    //// Stuff we handle to be a defense modifier.
 
-   ModifyDefensePower(who = $, what = $, defense_power = 0, state = $)
+   ModifyDefensePower(who = $, what = $, defense_power = 0)
    {
-      if (state = $)
+      local lState, iSpellpower;
+
+      lState = Send(who,@GetEnchantedState,#what=self);
+
+      if lState <> $
       {
+         iSpellpower = Nth(lState,2);
+      }
+      else
+      {
+         Send(self,@EndEnchantment,#who=who,#state=lState);
+
          return defense_power;
       }
 
-      return (defense_power + (3 * Nth(state,2)));
+      return (defense_power + (3 * iSpellpower));
    }
 
    ModifyDefenseDamage(who = $, what = $, damage = $)
@@ -421,7 +395,7 @@ messages:
    IllusionGetTemplate(who = $)
    {
       local oState;
-   
+
       if who <> $
       {
          oState = Send(who,@GetEnchantedState,#what=self);
@@ -431,7 +405,7 @@ messages:
          }
       }
 
-      return $;
+      return;
    }
 
    IllusionShowDesc(who = $, iHitPoint_Percent=$)

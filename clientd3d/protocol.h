@@ -65,10 +65,12 @@ typedef struct {
 #define SendLogoff()                 ToServer(BP_LOGOFF, NULL)
 #define RequestPlayer()              ToServer(BP_SEND_PLAYER, NULL)
 #define RequestRoom()                ToServer(BP_SEND_ROOM_CONTENTS, NULL)
+#define RequestTriggerQuest(id1, id2) ToServer(BP_REQ_TRIGGER_QUEST, NULL, id1, id2)
+#define RequestNPCQuests(id)         ToServer(BP_REQ_NPC_QUESTS, NULL, id)
 // Convert from client 0-based coordinates to server 1-based coordinates
-#define RequestMove(y, x, speed, room) \
+#define RequestMove(y, x, speed, room, angle) \
 ToServer(BP_REQ_MOVE, NULL, FinenessClientToKod(y) + KOD_FINENESS, \
-	 FinenessClientToKod(x) + KOD_FINENESS, speed, room)
+	 FinenessClientToKod(x) + KOD_FINENESS, speed, room, angle)
 #define RequestObjectContents(id)    ToServer(BP_SEND_OBJECT_CONTENTS, NULL, id)
 #define RequestPickup(id)            ToServer(BP_REQ_GET, NULL, id)
 #define RequestInventory()           ToServer(BP_REQ_INVENTORY, NULL)
@@ -96,12 +98,13 @@ ToServer(BP_REQ_MOVE, NULL, FinenessClientToKod(y) + KOD_FINENESS, \
 #define RequestApply(obj1, obj2)     ToServer(BP_REQ_APPLY, NULL, obj1, obj2)
 #define RequestGameResync()          ToServer(BP_RESYNC, NULL)
 #define RequestCast(id, objs)        ToServer(BP_REQ_CAST, NULL, id, objs)
+#define RequestPerform(id, objs)     ToServer(BP_REQ_PERFORM, NULL, id, objs)
 #define RequestTurn(obj, angle)      ToServer(BP_REQ_TURN, NULL, obj, angle)
 #define RequestAction(action)        ToServer(BP_ACTION, NULL, action)
 #define SendSayBlocked(id)           ToServer(BP_SAY_BLOCKED, NULL, id)
 #define RequestChangeDescription(id, str) ToServer(BP_CHANGE_DESCRIPTION, NULL, id, str)
 #define RequestActivate(id)          ToServer(BP_REQ_ACTIVATE, NULL, id)
-#define RequestGamePing()            ToServer(BP_PING, NULL)
+#define RequestGamePing()            ToServer(BP_PING, NULL); ToServer(BP_UDP_PING, NULL)
 #define RequestChangeURL(obj, s)     ToServer(BP_USERCOMMAND, user_msg_table, UC_CHANGE_URL, obj, s)
 #define RequestChangePassword(str1, str2) ToServer(BP_CHANGE_PASSWORD, NULL, str1, str2)
 #define RequestRescue()              ToServer(BP_USERCOMMAND, user_msg_table, UC_REQ_RESCUE)
@@ -110,5 +113,7 @@ ToServer(BP_REQ_MOVE, NULL, FinenessClientToKod(y) + KOD_FINENESS, \
 
 M59EXPORT void Logoff(void);
 M59EXPORT void _cdecl ToServer(BYTE type, ClientMsgTable table, ...);
+bool IsUsingUDPTransfer(void);
+void SetUDPTransfer(bool value);
 
 #endif /* #ifndef _PROTOCOL_H */

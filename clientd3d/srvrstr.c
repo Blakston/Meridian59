@@ -110,8 +110,7 @@ Bool CheckServerMessage(char** msg, char **params, long *len, ID fmt_id)
          // back through it due to an %s formatter on the end, we have to skip
          // it here. Any potential characters that could come after the % should
          // be checked here to skip to next formatter (if any).
-         if (type_char == ' ' || type_char == '.' || type_char == ','
-            || type_char == '!' || type_char == '?')
+         if (!isalnum((int)type_char) && type_char != '%')
          {
             next_ptr = strchr(next_ptr, '%');
 
@@ -395,7 +394,7 @@ int CheckMessageOrder(char **params, long *len, ID fmt_id)
    WORD string_len;
    DWORD field;
    int fieldPos = 0, currentPos = 0, tempLen = 0;
-   char digit[2];
+   char digit[3];
    PosArray posArray;
 
    // If there's nothing to reorder (i.e. no $ modifiers) don't perform
@@ -429,10 +428,24 @@ int CheckMessageOrder(char **params, long *len, ID fmt_id)
             reorder = True;
             // Get the numbers for field position.
             if (rsc[3] >= '0' && rsc[3] <= '9')
+            {
                digit[0] = rsc[3];
-            // Check for a second number.
-            if (rsc[4] != '\0' && rsc[4] >= '0' && rsc[4] <= '9')
-               digit[1] = rsc[4];
+               // Check for a second number.
+               if (rsc[4] != '\0' && rsc[4] >= '0' && rsc[4] <= '9')
+               {
+                  digit[1] = rsc[4];
+                  digit[2] = 0;
+               }
+               else
+               {
+                  digit[1] = 0;
+               }
+            }
+            else
+            {
+               digit[0] = 0;
+            }
+
             // Take one, because arrays are 0-indexed.
             fieldPos = atoi(digit) - 1;
 
@@ -582,6 +595,8 @@ static FormatCode code_table[] = {
 { 'B', CODE_STYLE, STYLE_BOLD },
 { 'I', CODE_STYLE, STYLE_ITALIC },
 { 'U', CODE_STYLE, STYLE_UNDERLINE },
+{ 'S', CODE_STYLE, STYLE_STRIKEOUT },
+{ 'L', CODE_STYLE, STYLE_LINK },
 { 'n', CODE_STYLE, STYLE_RESET },
 };
 
@@ -725,6 +740,102 @@ void DisplayMessage(char *message, COLORREF start_color, BYTE start_style)
    // Add anything remaining
    if (*str != 0)
       EditBoxAddText(str, color, style);
+
+   if (bFree)
+      SafeFree(message);
+
+   SafeFree(p);
+}
+
+/************************************************************************/
+/*
+ * DisplayMessageQuestRestrictions:  Display string, extracting any style
+ * or color codes. Used in quest UI for restrictions text coloring.
+ * color and style give default style and color values.
+ */
+void DisplayMessageQuestRestrictions(char *message, COLORREF start_color, BYTE start_style)
+{
+   int i;
+   char ch, *ptr, *str;  // str points to start of current piece of message
+   COLORREF color, new_color;
+   BYTE style, new_style, new_type;
+   BOOL bFree = FALSE;
+   char* p;
+
+   message = strdup(message);
+
+   p = message;
+   str = message;
+   color = start_color;
+   style = start_style;
+   for (ptr = message; *ptr != 0; ptr++)
+   {
+      if (strchr(format_chars, *ptr) == NULL)
+         continue;
+
+      ch = *(ptr + 1);
+
+      // Check for format char right before end of string
+      if (ch == 0)
+         break;
+
+      new_type = 0;
+      for (i = 0; i < num_format_codes; i++)
+      {
+         if (code_table[i].code != ch)
+            continue;
+
+         switch (code_table[i].type)
+         {
+         case CODE_COLOR:
+            new_color = code_table[i].data;
+            new_type |= CODE_COLOR;
+            break;
+
+         case CODE_STYLE:
+            switch (code_table[i].data)
+            {
+            case STYLE_NORMAL:
+               new_style = STYLE_NORMAL;
+               break;
+
+            case STYLE_RESET:
+               new_style = start_style;
+               new_color = start_color;
+               new_type |= CODE_COLOR;
+               break;
+
+            default:
+               new_style = style ^ code_table[i].data;  // Toggle style
+               break;
+            }
+
+            new_type |= CODE_STYLE;
+            break;
+
+         default:
+            debug(("DisplayMessageQuestRestrictions got unknown code type %d\n",
+               code_table[i].type));
+            break;
+         }
+      }
+
+      if (new_type != 0)
+      {
+         *ptr = 0;
+         QuestRestrictionsAddText(str, color, style);
+         if (new_type & CODE_COLOR)
+            color = new_color;
+         if (new_type & CODE_STYLE)
+            style = new_style;
+         ptr++;
+         str = ptr + 1;   // Skip code
+      }
+   }
+
+   // Add anything remaining
+   if (*str != 0)
+      QuestRestrictionsAddText(str, color, style);
 
    if (bFree)
       SafeFree(message);

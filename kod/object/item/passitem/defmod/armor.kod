@@ -136,5 +136,23 @@ messages:
       return pbColored;
    }
 
+   SetArmorColored(value=TRUE)
+   {
+      pbColored = value;
+
+      return;
+   }
+
+   CanBeUsedInQuests()
+   "Colored armor can't be given away in quests."
+   {
+      if (pbColored <> 0)
+      {
+         return FALSE;
+      }
+
+      propagate;
+   }
+
 end
 ////////////////////////////////////////////////////////////////////////////////

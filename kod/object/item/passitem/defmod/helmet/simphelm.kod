@@ -22,7 +22,8 @@ resources:
    SimpleHelm_icon_male_rsc = helm.bgf
    SimpleHelm_icon_female_rsc = helmb.bgf
    SimpleHelm_desc_rsc = \
-      "Steel and chain links give moderate protection to the wearer of this padded helmet."   
+      "Steel and chain links give moderate protection to the wearer of "
+      "this padded helmet."
 
 classvars:
 
@@ -50,7 +51,6 @@ classvars:
 
 properties:
 
-
 messages:
 
    NewUsed()
@@ -69,7 +69,7 @@ messages:
 
    GetResistanceModifiers()
    {
-      return [ [ATCK_WEAP_BLUDGEON,-10]
+      return [ [ATK_TYPE_BLUDGEON,-10]
              ];
    }
    

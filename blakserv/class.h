@@ -58,7 +58,8 @@ typedef struct class_struct
    struct class_struct *next; /* for open hash table linked list */
 } class_node;
 
-/* two functions from message.c that need class_node */
+/* Three functions from message.c that need class_node. */
+message_node *GetMessageByIDFast(class_node *c, int message_id, class_node **found_class);
 message_node *GetMessageByID(int class_id,int message_id,class_node **found_class);
 message_node *GetMessageByName(int class_id,char *message_name,class_node **found_class);
 
@@ -78,7 +79,10 @@ void SetClassVariables(void);
 void AddClassPropertyName(class_node *c,char *property_name,int property_id);
 void SetClassPropertyNames();
 class_node * GetClassByName(const char *class_name);
+int GetClassIDByName(const char *class_name);
 class_node * GetClassByID(int class_id);
+const char * GetClassNameByID(int class_id);
+const char * GetClassNameByObjectID(int object_id);
 const char * GetPropertyNameByID(class_node *c,int property_id);
 int GetPropertyIDByName(class_node *c,const char *property_name);
 char *GetClassVarNameByID(class_node *c,int classvar_id);

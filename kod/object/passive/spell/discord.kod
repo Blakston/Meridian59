@@ -25,11 +25,10 @@ resources:
    discordance_icon_rsc = idiscord.bgf
    discordance_desc_rsc = \
       "Magical energy is unleashed which tries to destroy magical "
-      "enchantments on the room.  Requires two sapphires to cast."
+      "enchantments on the room."
    discordance_on = \
       "The fabric of space twists subtly, just enough to damage the "
       "brittle mana field."
-
    discordance_sound = kdiscord.ogg
 
 classvars:
@@ -83,7 +82,18 @@ messages:
       propagate;
    }
 
-   CastSpell(who = $,lTargets = $,iSpellPower = $)
+   CanPayMonsterCosts(who=$)
+   "Monsters only discord if the room is enchanted."
+   {   
+      if Send(Send(who,@GetOwner),@GetEnchantmentList) = $
+      {
+         return FALSE;
+      }
+
+      propagate;
+   }
+
+   DoSpellEffects(who = $,lTargets = $,iSpellPower = $)
    {
       local oRoom;
 
@@ -109,10 +119,10 @@ messages:
 
       if NOT IsClass(who,&Player)
       {
-         return;
+         return FALSE;
       }
 
-      propagate;
+      return TRUE;
    }
 
    DoDiscordance(who = $,oRoom = $,iChance = $)
@@ -137,7 +147,7 @@ messages:
             oSpell = Nth(i,2);
             state = Nth(i,3);
             // Remove at the source.
-            Send(Send(oSpell,@GetSource,#state=state),@RemoveRadiusEnchantment,
+            Send(Nth(state,RE_STATE_SOURCE),@RemoveRadiusEnchantment,
                   #what=oSpell,#state=state,#recheck=TRUE);
          }
 
@@ -151,6 +161,13 @@ messages:
       {
          oSpell = Nth(i,2);
          oCaster = Send(oSpell,@GetCaster,#state=Nth(i,3));
+
+         // Don't discord spells cast by rooms.
+         if (IsClass(oCaster,&Room))
+         {
+            continue;
+         }
+
          iModifiedChance = iChance;
          if Send(oSpell,@GetSchool) = SS_JALA
          {
@@ -162,6 +179,7 @@ messages:
          {
             if (NOT IsClass(who,&Battler)
                OR NOT IsClass(oCaster,&Battler)
+               OR (IsClass(oCaster,&Player) AND Send(oCaster,@IsOfflineOrCannotInteract))
                OR Send(who,@AllowBattlerAttack,#victim=oCaster,#stroke_obj=self,
                         #oRoomOverride=oRoom))
             {
@@ -176,7 +194,7 @@ messages:
       {
          oSpell = Nth(i,2);
          state = Nth(i,3);
-         oCaster = Send(oSpell,@GetCaster,#state=state);
+         oCaster = First(state); // Nth(state,RE_STATE_CASTER)
          iModifiedChance = iChance;
          if Send(oSpell,@GetSchool) = SS_JALA
          {
@@ -189,11 +207,12 @@ messages:
             // Check whether we can attack the caster.
             if (NOT IsClass(who,&Battler)
                OR NOT IsClass(oCaster,&Battler)
+               OR (IsClass(oCaster,&Player) AND Send(oCaster,@IsOfflineOrCannotInteract))
                OR Send(who,@AllowBattlerAttack,#victim=oCaster,#stroke_obj=self,
                         #oRoomOverride=oRoom))
             {
                // Remove at the source.
-               Send(Send(oSpell,@GetSource,#state=state),@RemoveRadiusEnchantment,
+               Send(Nth(state,RE_STATE_SOURCE),@RemoveRadiusEnchantment,
                      #what=oSpell,#state=state,#recheck=TRUE);
                bRemovedSomething = TRUE;
             }
@@ -201,6 +220,11 @@ messages:
       }
 
       return bRemovedSomething;
+   }
+
+   GetScrollClass()
+   {
+      return &DiscordScroll;
    }
 
 end
